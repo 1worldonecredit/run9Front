@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-// เปลี่ยนจากบรรทัดแรกทำให้หน้า register อยู่ใต้ Top NavBar Prelogin
+
 export default function Register({ onSwitchToLogin }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams(); 
   
   // --- ตัวแปรเก็บข้อมูล ---
   const [country, setCountry] = useState('Thailand (+66)');
-  // 🌟 ดึงค่า ref จาก URL มาใส่เป็นค่าเริ่มต้นให้ referral เลย
   const [referral, setReferral] = useState(searchParams.get('ref') || '');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -20,7 +19,7 @@ export default function Register({ onSwitchToLogin }) {
   const [usernameMessage, setUsernameMessage] = useState('');
   const [isUsernameAvailable, setIsUsernameAvailable] = useState(null);
 
-  // 🌟 เพิ่ม useEffect: ถ้ามีรหัสคนชวนมาจาก URL ให้จำลองการพิมพ์เพื่อเช็คชื่อทันที!
+  // 🌟 พิมพ์จำลองการเช็คชื่อผู้แนะนำทันที ถ้ามี ref มาจาก URL
   useEffect(() => {
     const refFromUrl = searchParams.get('ref');
     if (refFromUrl) {
@@ -96,7 +95,6 @@ export default function Register({ onSwitchToLogin }) {
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    // ดักไว้ก่อน: ถ้าหาผู้แนะนำไม่เจอ หรือ ชื่อซ้ำ จะไม่ยอมให้สมัคร
     if (isReferralFound === false) {
       alert('กรุณาตรวจสอบรหัสผู้แนะนำให้ถูกต้อง');
       return;
@@ -107,7 +105,6 @@ export default function Register({ onSwitchToLogin }) {
     }
 
     try {
-      // 🌟 ส่งค่า referral เข้าไปให้ API เพื่อบันทึกเป็นคนชวน
       const response = await fetch('https://api.run9.app/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -117,7 +114,11 @@ export default function Register({ onSwitchToLogin }) {
       
       if (response.ok || data.success) {
         alert('✅ สมัครสมาชิกสำเร็จ!'); 
-        onSwitchToLogin();    // ✅ ใช้คำสั่งนี้เพื่อสลับการ์ดกลับไปหน้า Login แบบสมูทๆ
+        if (onSwitchToLogin) {
+          onSwitchToLogin();
+        } else {
+          navigate('/login');
+        }
       } else {
         alert('❌ ไม่สามารถสมัครได้: ' + data.error);
       }
@@ -127,50 +128,70 @@ export default function Register({ onSwitchToLogin }) {
   };
 
   return (
-    <div className="page-content" style={{ display: 'flex', justifyContent: 'center', marginTop: '40px' }}>
-      <div className="card" style={{ width: '100%', maxWidth: '350px' }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '20px', color: 'var(--primary-color)' }}>Register</h2>
+    <div className="login-wrapper">
+      {/* 🌟 ปุ่มย้อนกลับ */}
+      <button className="back-button" onClick={() => navigate(-1)}>
+        &#8592; ย้อนกลับ
+      </button>
+
+      <div className="login-glass-card">
+        <h2 className="login-title">Register</h2>
         
-        <form onSubmit={handleRegister}>
+        <form className="login-form" onSubmit={handleRegister}>
           
+          {/* ช่องเลือกประเทศ */}
           <div className="input-group">
             <label>ประเทศ (สกุลเงิน)</label>
-            <select 
-              value={country} 
-              onChange={(e) => setCountry(e.target.value)}
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}
-            >
-              <option value="Thailand (+66)">Thailand (+66)</option>
-              <option value="Laos (+856)">Laos (+856)</option>
-            </select>
+            <div className="input-wrapper">
+              <span className="input-icon">🌍</span>
+              <select 
+                value={country} 
+                onChange={(e) => setCountry(e.target.value)}
+                style={{ 
+                  background: 'transparent', 
+                  color: '#fff', 
+                  width: '100%', 
+                  border: 'none', 
+                  outline: 'none',
+                  padding: '15px 0',
+                  fontFamily: 'inherit',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  appearance: 'none'
+                }}
+              >
+                {/* สี option เป็นสีดำเผื่อในมือถือมองไม่เห็น */}
+                <option value="Thailand (+66)" style={{ color: '#000' }}>Thailand (+66)</option>
+                <option value="Laos (+856)" style={{ color: '#000' }}>Laos (+856)</option>
+              </select>
+            </div>
           </div>
 
+          {/* ช่องรหัสผู้แนะนำ */}
           <div className="input-group">
             <label>รหัสผู้แนะนำ (Referral Username)</label>
-            <div className="input-field-wrapper">
+            {/* 🌟 ถ้าโดนล็อกด้วย URL จะให้พื้นหลังสว่างขึ้นนิดนึงเพื่อบอกใบ้ว่าพิมพ์แก้ไม่ได้ */}
+            <div className="input-wrapper" style={{ background: searchParams.get('ref') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.4)' }}>
               <span className="input-icon">#</span>
               <input 
                 type="text" 
                 value={referral}
                 onChange={handleCheckReferral} 
                 placeholder="กรอกรหัสผู้แนะนำ (ถ้ามี)"
-                readOnly={!!searchParams.get('ref')} // 🌟 ถ้ามีรหัสมาจากลิงก์ ให้ล็อกช่องนี้ไว้พิมพ์แก้ไม่ได้
-                style={{ 
-                  background: searchParams.get('ref') ? '#f0f0f0' : 'transparent', // 🌟 เปลี่ยนสีพื้นหลังนิดหน่อยให้รู้ว่าล็อกอยู่
-                  color: searchParams.get('ref') ? '#666' : 'inherit',
-                  width: '100%', 
-                  border: 'none', 
-                  outline: 'none' 
-                }}
+                readOnly={!!searchParams.get('ref')} 
               />
             </div>
-            {/* โชว์ข้อความเขียว-แดง */}
-            {referralMessage && <p style={{ fontSize: '0.75rem', marginTop: '4px', color: isReferralFound ? 'green' : 'red' }}>{referralMessage}</p>}
+            {referralMessage && (
+              <p style={{ fontSize: '0.8rem', marginTop: '5px', color: isReferralFound ? '#00E676' : '#FF4C4C' }}>
+                {referralMessage}
+              </p>
+            )}
           </div>
 
+          {/* ช่อง Username */}
           <div className="input-group">
             <label>Username (4-15 ตัวอักษร)</label>
-            <div className="input-field-wrapper">
+            <div className="input-wrapper">
               <span className="input-icon">@</span>
               <input 
                 type="text" 
@@ -178,16 +199,19 @@ export default function Register({ onSwitchToLogin }) {
                 onChange={handleCheckUsername} 
                 placeholder="ตั้ง Username"
                 required
-                style={{ width: '100%', border: 'none', outline: 'none' }}
               />
             </div>
-            {/* โชว์ข้อความเขียว-แดง */}
-            {usernameMessage && <p style={{ fontSize: '0.75rem', marginTop: '4px', color: isUsernameAvailable ? 'green' : 'red' }}>{usernameMessage}</p>}
+            {usernameMessage && (
+              <p style={{ fontSize: '0.8rem', marginTop: '5px', color: isUsernameAvailable ? '#00E676' : '#FF4C4C' }}>
+                {usernameMessage}
+              </p>
+            )}
           </div>
 
+          {/* ช่อง Password */}
           <div className="input-group">
             <label>Password</label>
-            <div className="input-field-wrapper">
+            <div className="input-wrapper">
               <span className="input-icon">🔒</span>
               <input 
                 type="password" 
@@ -195,19 +219,29 @@ export default function Register({ onSwitchToLogin }) {
                 onChange={(e) => setPassword(e.target.value)} 
                 placeholder="ตั้งรหัสผ่าน"
                 required
-                style={{ width: '100%', border: 'none', outline: 'none' }}
               />
             </div>
           </div>
 
-          <button type="submit" className="btn-primary" style={{ marginTop: '10px', width: '100%' }}>
+          {/* ปุ่ม Submit แสงวิ่ง */}
+          <button type="submit" className="btn-futuristic">
             ยืนยันการลงทะเบียน
           </button>
         </form>
 
-       <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.875rem' }}>
-       กลับสู่หน้า <span style={{ color: 'var(--primary-color)', cursor: 'pointer', fontWeight: 'bold' }} onClick={onSwitchToLogin}>Login</span>
-      </p>
+        {/* ลิงก์กลับไปหน้า Login */}
+        <p className="register-link">
+          มีบัญชีอยู่แล้ว?{' '}
+          <span onClick={() => {
+            if (onSwitchToLogin) {
+              onSwitchToLogin();
+            } else {
+              navigate('/login');
+            }
+          }}>
+            เข้าสู่ระบบ
+          </span>
+        </p>
       </div>
     </div>
   );

@@ -1,67 +1,51 @@
 import React, { useState } from 'react';
-import Login from './pages/Login';
+// แก้จากบรรทัดเดิมที่หาไฟล์ไม่เจอ เป็นบรรทัดนี้ครับ:
+import Login from './pages/Login'; 
 import Register from './pages/Register';
+import './index.css';
 
-export default function Prelogin() {
-  // สร้าง State เพื่อจำว่าตอนนี้กำลังดูหน้าไหนอยู่ ('welcome', 'login', หรือ 'register')
-  const [currentView, setCurrentView] = useState('welcome');
+function Prelogin() {
+  // 🟢 สร้างตัวแปร state เพื่อเก็บว่าตอนนี้จะแสดงหน้าไหน ('home', 'login', 'register')
+  const [activeView, setActiveView] = useState('home');
 
   return (
-    <>
-      {/* Navbar ด้านบน จะอยู่คงที่ตลอดเวลา */}
-      <div className="top-navbar">
-        <div className="brand-title">9 Plus</div>
-        <div className="nav-actions">
-          {/* ถ้าไม่ได้อยู่หน้าแรกสุด ให้มีปุ่ม 'ย้อนกลับ' */}
-          {currentView !== 'welcome' && (
-            <span 
-              style={{ cursor: 'pointer', fontSize: '0.875rem', color: 'var(--primary-color)', fontWeight: 'bold' }} 
-              onClick={() => setCurrentView('welcome')}
-            >
-              ย้อนกลับ
-            </span>
-          )}
-        </div>
+    <div className="prelogin-wrapper">
+      {/* Top Navbar */}
+      <nav className="top-navbar">
+        <div className="navbar-logo" onClick={() => setActiveView('home')}>9 Plus</div>
+        
+        {activeView === 'home' && (
+          <button className="navbar-login-icon" onClick={() => setActiveView('login')}>
+            {/* ไอคอน Login */}
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+              <polyline points="10 17 15 12 10 7"></polyline>
+              <line x1="15" y1="12" x2="3" y2="12"></line>
+            </svg>
+          </button>
+        )}
+      </nav>
+
+      {/* Main Content (แสดงผลตาม activeView) */}
+      <div className="prelogin-content">
+        {activeView === 'home' && (
+           <div className="welcome-screen">
+             {/* ใส่เนื้อหาหน้าแรกของคุณที่นี่ถ้ามี */}
+           </div>
+        )}
+
+        {/* 🟢 ถ้า activeView เป็น 'login' ให้แสดงหน้า Login */}
+        {activeView === 'login' && (
+          <Login onSwitchToRegister={() => setActiveView('register')} />
+        )}
+
+        {/* 🟢 ถ้า activeView เป็น 'register' ให้แสดงหน้า Register */}
+        {activeView === 'register' && (
+          <Register onSwitchToLogin={() => setActiveView('login')} />
+        )}
       </div>
-
-      {/* 1. แสดงหน้าต้อนรับ (เมื่อ currentView = 'welcome') */}
-      {currentView === 'welcome' && (
-        <div className="page-content" style={{ textAlign: 'center', marginTop: '60px' }}>
-          <div style={{ marginBottom: '40px' }}>
-            <h1 style={{ color: 'var(--primary-color)', fontSize: '2.5rem', marginBottom: '10px' }}>9 Plus</h1>
-            <p style={{ color: 'var(--text-secondary)' }}>แพลตฟอร์มการเงินแห่งอนาคตของคุณ</p>
-          </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center' }}>
-            <button 
-              className="btn-primary" 
-              style={{ maxWidth: '250px' }} 
-              onClick={() => setCurrentView('login')}
-            >
-              เข้าสู่ระบบ (Login)
-            </button>
-            <button 
-              className="btn-primary" 
-              style={{ maxWidth: '250px', background: 'var(--surface-color)', color: 'var(--primary-color)', border: '2px solid var(--primary-color)' }} 
-              onClick={() => setCurrentView('register')}
-            >
-              สร้างบัญชีใหม่ (Register)
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 2. แสดงหน้า Login (เมื่อ currentView = 'login') */}
-      {currentView === 'login' && (
-        // ส่งฟังก์ชัน onSwitch ไปให้หน้า Login เพื่อให้มันสั่งเปลี่ยนไปหน้า Register ได้
-        <Login onSwitchToRegister={() => setCurrentView('register')} />
-      )}
-
-      {/* 3. แสดงหน้า Register (เมื่อ currentView = 'register') */}
-      {currentView === 'register' && (
-        // ส่งฟังก์ชัน onSwitch ไปให้หน้า Register เพื่อให้มันสั่งเปลี่ยนกลับมาหน้า Login ได้
-        <Register onSwitchToLogin={() => setCurrentView('login')} />
-      )}
-    </>
+    </div>
   );
 }
+
+export default Prelogin;

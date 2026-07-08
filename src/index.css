@@ -447,3 +447,383 @@ body {
   font-size: 0.75rem;
   color: var(--earth-secondary);
 }
+
+/* =========================================
+   Global & Background (ล้อตาม Reference รูปมืด)
+   ========================================= */
+.prelogin-wrapper {
+  min-height: 100vh;
+  /* ไล่สีพื้นหลังแบบหรูหรา ม่วงเข้ม/เทาเข้ม มีแสงส้มบางๆ */
+  background: radial-gradient(circle at 80% 30%, #3a2528 0%, #1e1e26 40%, #121217 100%);
+  color: #ffffff;
+  font-family: 'Prompt', sans-serif;
+  /* ใช้ฟอนต์ไทย */
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================================
+   Top Navbar
+   ========================================= */
+.top-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: transparent;
+  /* โปร่งใสให้กลืนกับพื้นหลัง */
+}
+
+.navbar-logo {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #a0a0b0;
+  /* สีเทาอ่อน */
+  letter-spacing: 1px;
+}
+/* =========================================
+   Top Navbar
+   ========================================= */
+/* ... โค้ดส่วนอื่นคงเดิม ... */
+
+.navbar-login-icon {
+  background: transparent;
+  /* ทำให้พื้นหลังโปร่งใส (เอาวงกลมสีเทาออก) */
+  border: none;
+  /* เอาเส้นขอบออก */
+  width: auto;
+  /* ปล่อยความกว้างให้พอดีกับ Icon */
+  height: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+  color: #FF6B4A;
+  /* สีส้ม */
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 8px;
+  /* เพิ่มพื้นที่ให้กดง่ายขึ้น */
+}
+
+/* เอฟเฟกต์ตอนเอาเมาส์ชี้ (Hover) */
+.navbar-login-icon:hover {
+  background: transparent;
+  /* ไม่ต้องมีพื้นหลังโผล่มาตอนชี้ */
+  transform: scale(1.15);
+  /* ให้ไอคอนขยายใหญ่ขึ้นนิดนึงแทน */
+  color: #ff8b71;
+  /* เปลี่ยนสีให้สว่างขึ้นเล็กน้อย */
+}
+
+
+/* =========================================
+   Main Card (Glassmorphism Style)
+   ========================================= */
+.prelogin-content {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.glass-card {
+  background: rgba(43, 43, 54, 0.6);
+  /* สีการ์ดเทาเข้มโปร่งแสง */
+  backdrop-filter: blur(12px);
+  /* เอฟเฟกต์กระจกเบลอ */
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  /* มุมโค้งมนแบบแอปสมัยใหม่ */
+  padding: 50px 30px;
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* =========================================
+   Typography (ตัวอักษร)
+   ========================================= */
+.brand-title {
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 10px 0;
+  letter-spacing: 2px;
+}
+
+.brand-subtitle {
+  font-size: 0.95rem;
+  color: #8c8c9e;
+  /* สีเทาหม่น ให้อ่านง่ายแต่ไม่แย่งซีน */
+  margin: 0 0 40px 0;
+}
+
+/* =========================================
+   Buttons (ปุ่ม Login / Register)
+   ========================================= */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* ระยะห่างระหว่างปุ่ม */
+}
+
+/* ปุ่ม Login (เน้นทึบ สีส้มหรือสีเทา) */
+.btn-primary {
+  background-color: #3b3b4f;
+  /* สีทึบตามเรฟ */
+  color: #ffffff;
+  border: none;
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary:hover {
+  background-color: #FF6B4A;
+  /* โฮเวอร์แล้วเป็นสีส้มเด่นขึ้นมา */
+  transform: translateY(-2px);
+}
+
+/* ปุ่ม Register (แบบขอบ ล้อกับความมินิมอล) */
+.btn-secondary {
+  background-color: transparent;
+  color: #FF6B4A;
+  /* ตัวหนังสือสีส้ม */
+  border: 1.5px solid #FF6B4A;
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background-color: rgba(255, 107, 74, 0.1);
+  transform: translateY(-2px);
+}
+
+/* =========================================
+   Login Page Wrapper (พื้นหลังต่อเนื่อง)
+   ========================================= */
+.login-wrapper {
+  min-height: 100vh;
+  /* ใช้พื้นหลังเดียวกับ Prelogin ให้ดูเป็นแอปเดียวกัน */
+  background: radial-gradient(circle at 80% 30%, #3a2528 0%, #1e1e26 40%, #121217 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  font-family: 'Prompt', sans-serif;
+}
+
+/* ปุ่มย้อนกลับมุมซ้ายบน */
+.back-button {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  background: transparent;
+  color: #a0a0b0;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.back-button:hover {
+  color: #FFD700;
+  /* โฮเวอร์แล้วเป็นสีทอง */
+  transform: translateX(-5px);
+  /* ขยับถอยหลังนิดนึง */
+}
+
+/* =========================================
+   Futuristic Glass Card
+   ========================================= */
+.login-glass-card {
+  background: rgba(20, 20, 30, 0.6);
+  /* กระจกสีเทาเข้ม */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  /* ขอบสีทองจางๆ */
+  border-radius: 24px;
+  padding: 40px 30px;
+  width: 90%;
+  max-width: 380px;
+  /* เงาลึกและแสงสะท้อนด้านใน */
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 215, 0, 0.05);
+  animation: cardFloat 1s ease-out forwards;
+  /* แอนิเมชันตอนโหลดหน้า */
+}
+
+@keyframes cardFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* =========================================
+   Glowing Typography (ตัวอักษรสีทองเรืองแสง)
+   ========================================= */
+.login-title {
+  text-align: center;
+  font-size: 2.2rem;
+  margin-bottom: 30px;
+  /* ไล่สีทอง */
+  background: linear-gradient(90deg, #FFDF00, #D4AF37);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* แสงออร่ารอบตัวอักษร */
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+  letter-spacing: 2px;
+}
+
+/* =========================================
+   Form Inputs (ช่องกรอกข้อมูลล้ำๆ)
+   ========================================= */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.input-group label {
+  display: block;
+  color: #a0a0b0;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0 15px;
+  transition: all 0.3s ease;
+}
+
+/* แสงเรืองรองเมื่อคลิกที่ช่องกรอกข้อมูล */
+.input-wrapper:focus-within {
+  border-color: #FFD700;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.3), inset 0 0 10px rgba(255, 215, 0, 0.1);
+}
+
+.input-icon {
+  color: #FFD700;
+  font-size: 1.2rem;
+  margin-right: 10px;
+  opacity: 0.8;
+}
+
+.input-wrapper input {
+  background: transparent;
+  border: none;
+  color: #fff;
+  width: 100%;
+  padding: 15px 0;
+  font-size: 1rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.input-wrapper input::placeholder {
+  color: #6c6c80;
+}
+
+/* =========================================
+   Futuristic Button (ปุ่มโลกอนาคต)
+   ========================================= */
+.btn-futuristic {
+  margin-top: 10px;
+  background: linear-gradient(45deg, #D4AF37, #FFDF00);
+  /* ไล่สีทอง */
+  color: #121217;
+  /* ตัวหนังสือสีดำให้ตัดกัน */
+  border: none;
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+}
+
+/* เอฟเฟกต์ตอนชี้เมาส์ (เด้งขึ้น + ออร่าแสงสว่างจ้า) */
+.btn-futuristic:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(255, 215, 0, 0.6);
+  letter-spacing: 1px;
+}
+
+/* เอฟเฟกต์แสงวิ่งพาดผ่านปุ่ม (Futuristic Sweep) */
+.btn-futuristic::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  transform: skewX(-25deg);
+  animation: shineSweep 3s infinite;
+  /* แสงวิ่งทุกๆ 3 วินาที */
+}
+
+@keyframes shineSweep {
+  0% {
+    left: -100%;
+  }
+
+  20% {
+    left: 200%;
+  }
+
+  100% {
+    left: 200%;
+  }
+}
+
+/* =========================================
+   Register Link
+   ========================================= */
+.register-link {
+  text-align: center;
+  margin-top: 25px;
+  color: #8c8c9e;
+  font-size: 0.9rem;
+}
+
+.register-link span {
+  color: #FFD700;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.register-link span:hover {
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+  text-decoration: underline;
+}

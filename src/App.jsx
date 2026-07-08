@@ -108,6 +108,7 @@ function App() {
           </Route>
             <Route path="/prelogin" element={<Prelogin/>} />
           <Route path="/promo" element={<Promo />} />
+          <Route path="/register" element={<Register />} />
         </Routes>
       </div>
     </Router>

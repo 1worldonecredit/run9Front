@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import '../index.css'; // ต้อง import ไฟล์ CSS ด้วยเพื่อให้ความสวยงามทำงาน
 
 export default function Login({ onSwitchToRegister }) {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-const handleLogin = async (e) => {
+  // 🟢 ฟังก์ชัน Handle Login ของคุณ (คงไว้เหมือนเดิม 100%)
+  const handleLogin = async (e) => {
     e.preventDefault();
     try {
       const response = await fetch('https://api.run9.app/login', {
@@ -17,12 +19,11 @@ const handleLogin = async (e) => {
       const data = await response.json();
       
       if (response.ok) {
-        // 🟢 ตอนนี้ data.username และ data.country มีค่าส่งมาจาก Backend แล้ว
+        // เก็บข้อมูลลง LocalStorage
         localStorage.setItem('username', data.username);
         localStorage.setItem('country', data.country); 
         
-        // 🟢 ใช้คำสั่ง navigate ของ React-Router เพื่อเปลี่ยนหน้า (ลบ window.location.href ออก)
-        // ถ้าอยากให้ล็อกอินแล้วไปหน้า Profile เลย ให้เปลี่ยนเป็น navigate('/profile');
+        // ล็อกอินผ่านแล้วเด้งไปหน้า Profile
         navigate('/profile'); 
       } else {
         alert('❌ ' + (data.error || 'ข้อมูลผิดพลาด'));
@@ -30,49 +31,71 @@ const handleLogin = async (e) => {
     } catch (error) {
       alert('⚠️ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
     }
-};
+  };
 
   return (
-    <div className="page-content" style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-      <div className="card" style={{ width: '100%', maxWidth: '350px' }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '20px', color: 'var(--primary-color)' }}>Login</h2>
+    <div className="login-wrapper">
+      {/* 🟢 ปุ่มย้อนกลับ */}
+      <button className="back-button" onClick={() => navigate(-1)}>
+        &#8592; ย้อนกลับ
+      </button>
+
+      {/* 🟢 Card กระจกโลกอนาคต */}
+      <div className="login-glass-card">
+        <h2 className="login-title">Login</h2>
         
-        <form onSubmit={handleLogin}>
+        {/* 🟢 Form ที่ผูกกับ handleLogin */}
+        <form className="login-form" onSubmit={handleLogin}>
+          
+          {/* ช่อง Username */}
           <div className="input-group">
             <label>Username</label>
-            <div className="input-field-wrapper">
+            <div className="input-wrapper">
               <span className="input-icon">@</span>
               <input 
                 type="text" 
-                value={username}
-                onChange={(e) => setUsername(e.target.value)} 
                 placeholder="กรอกชื่อผู้ใช้งาน"
-                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required 
               />
             </div>
           </div>
 
+          {/* ช่อง Password */}
           <div className="input-group">
             <label>Password</label>
-            <div className="input-field-wrapper">
+            <div className="input-wrapper">
               <span className="input-icon">🔒</span>
               <input 
                 type="password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)} 
                 placeholder="กรอกรหัสผ่าน"
-                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required 
               />
             </div>
           </div>
 
-          <button type="submit" className="btn-primary" style={{ marginTop: '10px' }}>
+          {/* 🟢 ปุ่ม Submit แสงวิ่ง */}
+          <button type="submit" className="btn-futuristic">
             เข้าสู่ระบบ
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.875rem' }}>
-          ยังไม่มีบัญชี? <span style={{ color: 'var(--primary-color)', cursor: 'pointer', fontWeight: 'bold' }} onClick={onSwitchToRegister}>สมัครสมาชิก</span>
+        {/* 🟢 ลิงก์ไปหน้าสมัครสมาชิก */}
+        <p className="register-link">
+          ยังไม่มีบัญชี?{' '}
+          <span onClick={() => {
+            // รองรับทั้งการส่ง props หรือถ้าไม่ส่งมาก็จะวิ่งไป path /register
+            if (onSwitchToRegister) {
+              onSwitchToRegister();
+            } else {
+              navigate('/register');
+            }
+          }}>
+            สมัครสมาชิก
+          </span>
         </p>
       </div>
     </div>
