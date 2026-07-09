@@ -99,7 +99,7 @@ export default function Assets() {
         <div style={{ background: 'linear-gradient(180deg, #1A1F2B 0%, #12161F 100%)', padding: '15px', borderRadius: '16px', boxShadow: '0 8px 20px rgba(0,0,0,0.4)', border: '1px solid rgba(50, 100, 255, 0.2)', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: '-25px', right: '-25px', width: '70px', height: '70px', background: 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%)', borderRadius: '50%' }}></div>
           <p style={{ margin: '0 0 4px 0', fontSize: '0.6rem', color: '#94A3B8', letterSpacing: '0.5px' }}>ยอดเงินคงเหลือ</p>
-          <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold', color: '#FACC15', textShadow: '0 0 10px rgba(250, 204, 21, 0.2)' }}>
+          <h1 style={{ margin: 0, fontSize: '0.8rem', fontWeight: 'bold', color: '#FACC15', textShadow: '0 0 10px rgba(250, 204, 21, 0.2)' }}>
             {currencySymbol}{new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(data.balance)}
           </h1>
         </div>
@@ -107,8 +107,8 @@ export default function Assets() {
         {/* การ์ด 2: เงินปันผลสะสม (โชว์ทศนิยม 6 ตำแหน่งให้เห็นตัวเลขวิ่ง) */}
         <div style={{ background: 'linear-gradient(180deg, #1A1F2B 0%, #12161F 100%)', padding: '15px', borderRadius: '16px', boxShadow: '0 8px 20px rgba(0,0,0,0.4)', border: '1px solid rgba(16, 185, 129, 0.2)', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: '-25px', right: '-25px', width: '70px', height: '70px', background: 'radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%)', borderRadius: '50%' }}></div>
-          <p style={{ margin: '0 0 4px 0', fontSize: '0.6rem', color: '#10B981', letterSpacing: '0.5px' }}>เงินปันผลสะสม (10%/ปี)</p>
-          <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold', color: '#10B981', textShadow: '0 0 10px rgba(16, 185, 129, 0.2)' }}>
+          <p style={{ margin: '0 0 4px 0', fontSize: '0.6rem', color: '#10B981', letterSpacing: '0.5px' }}>เงินปันผล (10%/ปี)</p>
+          <h1 style={{ margin: 0, fontSize: '0.8rem', fontWeight: 'bold', color: '#10B981', textShadow: '0 0 10px rgba(16, 185, 129, 0.2)' }}>
             +{currencySymbol}{new Intl.NumberFormat('th-TH', { minimumFractionDigits: 6, maximumFractionDigits: 6 }).format(pendingDividend)}
           </h1>
         </div>
