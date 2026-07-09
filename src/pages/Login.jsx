@@ -24,7 +24,7 @@ export default function Login({ onSwitchToRegister }) {
         localStorage.setItem('country', data.country); 
         
         // ล็อกอินผ่านแล้วเด้งไปหน้า Profile
-        navigate('/profile'); 
+        navigate('/Dashboard'); 
       } else {
         alert('❌ ' + (data.error || 'ข้อมูลผิดพลาด'));
       }

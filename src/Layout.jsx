@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
-// 🌟 นำเข้า Users เพิ่มเติมสำหรับเมนูทีมงาน
-import { Gamepad, ShoppingCart, Bell, Home, Briefcase, TrendingUp, MessageCircle, Users } from 'lucide-react';
-// 🌟 นำเข้า CSS ใหม่ที่เพิ่งสร้าง
+// 🌟 นำเข้า LogOut เพิ่มเติม
+import { Gamepad, ShoppingCart, Bell, Home, Briefcase, TrendingUp, MessageCircle, Users, Menu, X, LogOut } from 'lucide-react';
 import './layout.css'; 
 
 export default function Layout({ userProfile }) {
@@ -10,6 +9,7 @@ export default function Layout({ userProfile }) {
   const location = useLocation();
   
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -17,75 +17,97 @@ export default function Layout({ userProfile }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 🌟 อัปเดต: เพิ่มเมนู Team เข้าไปแล้ว
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // 🌟 ฟังก์ชันออกจากระบบสำหรับ Sidebar
+  const handleLogout = () => {
+    if(window.confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
+      localStorage.removeItem('username');
+      localStorage.removeItem('user');
+      window.location.href = '/prelogin'; 
+    }
+  };
+
+  // 🌟 อัปเดต: กำหนดสีเฉพาะตัวให้ Icon แต่ละเมนู
   const navItems = [
-    { path: '/dashboard', icon: <Home size={22} />, label: 'Home' },
-    { path: '/assets', icon: <Briefcase size={22} />, label: 'Assets' },
-    { path: '/market', icon: <TrendingUp size={22} />, label: 'Market' },
-    { path: '/team', icon: <Users size={22} />, label: 'Team' },
-    { path: '/chat', icon: <MessageCircle size={22} />, label: 'Chat' },
+    { path: '/dashboard', icon: <Home size={22} color="#3B82F6" />, label: 'Home' }, // สีฟ้า
+    { path: '/assets', icon: <Briefcase size={22} color="#10B981" />, label: 'Assets' }, // สีเขียว
+    { path: '/market', icon: <TrendingUp size={22} color="#F59E0B" />, label: 'Market' }, // สีส้ม
+    { path: '/team', icon: <Users size={22} color="#8B5CF6" />, label: 'Team' }, // สีม่วง
+    { path: '/chat', icon: <MessageCircle size={22} color="#EC4899" />, label: 'Chat' }, // สีชมพู
   ];
 
   return (
     <div className="frontend-layout-container">
       
-      {/* 🌟 1. Sidebar (แสดงเฉพาะบน Desktop) */}
-      {!isMobile && (
-        <div className="desktop-sidebar" style={{ width: '250px', background: '#12161F', borderRight: '1px solid rgba(50, 100, 255, 0.2)' }}>
-          <div className="sidebar-brand" style={{ padding: '20px', fontSize: '1.5rem', fontWeight: 'bold' }}>9 Plus</div>
-          
-          <div className="sidebar-menu" style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '0 15px' }}>
-            {navItems.map(item => (
-              <Link 
-                key={item.path} 
-                to={item.path} 
-                className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
-                style={{ 
-                  display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', 
-                  color: location.pathname === item.path ? '#3B82F6' : '#6C7280',
-                  textDecoration: 'none', borderRadius: '8px',
-                  background: location.pathname === item.path ? 'rgba(59, 130, 246, 0.1)' : 'transparent'
-                }}
-              >
-                {item.icon} <span>{item.label}</span>
-              </Link>
-            ))}
-          </div>
-
-          <div className="sidebar-profile" onClick={() => navigate('/profile')} style={{ marginTop: 'auto', padding: '20px', display: 'flex', gap: '10px', cursor: 'pointer', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-            <img 
-              src={userProfile?.image || 'https://via.placeholder.com/40'} 
-              alt="Profile" 
-              style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
-            />
-            <div className="sidebar-profile-info">
-              <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 'bold' }}>{userProfile?.name || 'ยังไม่ได้ระบุชื่อ'}</p>
-              <p style={{ margin: 0, fontSize: '0.75rem', color: '#A0A0B0' }}>{userProfile?.phone || 'ยังไม่ได้ระบุเบอร์โทร'}</p>
-            </div>
-          </div>
-        </div>
+      {isMobile && isMobileMenuOpen && (
+        <div className="sidebar-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>
       )}
 
-      {/* 🌟 2. พื้นที่เนื้อหาหลัก */}
+      {/* 🌟 1. Sidebar */}
+      <div className={`sidebar-wrapper ${isMobile ? (isMobileMenuOpen ? 'mobile-open' : 'mobile-closed') : 'desktop-open'}`}>
+        
+        {isMobile && (
+          <button className="close-menu-btn" onClick={() => setIsMobileMenuOpen(false)}>
+            <X size={24} />
+          </button>
+        )}
+
+        <div className="sidebar-brand" style={{ padding: '20px', fontSize: '1.5rem', fontWeight: 'bold', color: '#fff' }}>9 Plus</div>
+        
+        {/* พื้นที่เมนู (ใช้ CSS จัดการความสวยงามแทน Inline Style) */}
+        <div className="sidebar-menu">
+          {navItems.map(item => (
+            <Link 
+              key={item.path} 
+              to={item.path} 
+              className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
+            >
+              {item.icon} <span>{item.label}</span>
+            </Link>
+          ))}
+          
+          {/* 🌟 เส้นคั่นก่อนเมนู Logout */}
+          <div className="sidebar-divider"></div>
+
+          {/* 🌟 ปุ่ม Logout ใน Sidebar */}
+          <button className="sidebar-item logout-btn" onClick={handleLogout}>
+             <LogOut size={22} color="#EF4444" /> <span>ออกจากระบบ</span>
+          </button>
+        </div>
+
+        <div className="sidebar-profile" onClick={() => navigate('/profile')}>
+          <img 
+            src={userProfile?.image || 'https://via.placeholder.com/40'} 
+            alt="Profile" 
+            className="sidebar-profile-img"
+          />
+          <div className="sidebar-profile-info">
+            <p className="sidebar-profile-name">{userProfile?.name || 'ยังไม่ได้ระบุชื่อ'}</p>
+            <p className="sidebar-profile-sub">{userProfile?.phone || 'ยังไม่ได้ระบุเบอร์โทร'}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 🌟 2. พื้นที่เนื้อหาหลัก (ฝั่งขวา) */}
       <div className="main-content-wrapper">
         
         {/* Top Navbar */}
         <div className="top-navbar">
-          <div className="brand-title">{isMobile ? '9 Plus' : ''}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            {isMobile && (
+              <Menu size={28} color="#A0A0B0" style={{ cursor: 'pointer' }} onClick={() => setIsMobileMenuOpen(true)} />
+            )}
+            <div className="brand-title">{isMobile ? '9 Plus' : 'Dashboard'}</div>
+          </div>
           
           <div className="nav-actions">
-          
-            {/* 🌟 ปรับปรุง: เกมสอยดาว (เพิ่มคลาส game-icon-glow และปรับ size=32 ให้เด่นสุดๆ) */}
-            <Gamepad 
-              size={32}
-              className="nav-icon game-icon-glow" 
-              onClick={() => navigate('/game')} 
-            />
-
+            <Gamepad size={32} className="nav-icon game-icon-glow" onClick={() => navigate('/game')} />
             <ShoppingCart size={24} className="nav-icon" onClick={() => navigate('/cart')} />
             <Bell size={24} className="nav-icon" onClick={() => navigate('/notifications')} />
             
-            {/* โชว์รูปโปรไฟล์ด้านบน "เฉพาะในมือถือ" เท่านั้น */}
             {isMobile && (
               <img 
                 src={userProfile?.image || 'https://via.placeholder.com/35'} 
@@ -102,7 +124,7 @@ export default function Layout({ userProfile }) {
           <Outlet /> 
         </div>
 
-        {/* 🌟 3. Bottom Navbar (แสดงเฉพาะมือถือ) */}
+        {/* 🌟 3. Bottom Navbar (สำหรับมือถือ) */}
         {isMobile && (
           <div className="bottom-navbar">
             {navItems.map(item => (
@@ -111,7 +133,9 @@ export default function Layout({ userProfile }) {
                 to={item.path} 
                 className={`bottom-nav-item ${location.pathname === item.path ? 'active' : ''}`}
               >
-                {item.icon} <span>{item.label}</span>
+                {/* ดึงไอคอนมาใช้ โดยปรับสีให้เป็นสีเทาก่อนในโหมด Bottom Nav */}
+                {React.cloneElement(item.icon, { color: location.pathname === item.path ? item.icon.props.color : '#6C7280' })}
+                <span>{item.label}</span>
               </Link>
             ))}
           </div>

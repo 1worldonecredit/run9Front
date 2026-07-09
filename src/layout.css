@@ -1,43 +1,173 @@
 /* =========================================
-   Theme: Dark & Dimensional (สำหรับ Layout หลัง Login)
+   1. โครงสร้างหลัก (Desktop เป็นค่าเริ่มต้น)
    ========================================= */
-
-/* โครงสร้างหลัก */
 .frontend-layout-container {
+    display: flex;
+    flex-direction: row;
+    /* จัดเรียงซ้าย-ขวาบนจอคอม */
     min-height: 100vh;
     background-color: #0B0E14;
-    /* สีพื้นหลังดำอมน้ำเงินเข้มแบบเรฟเฟอเรนซ์ */
     color: #ffffff;
-    display: flex;
-    flex-direction: column;
+    overflow: hidden;
+    /* กันหน้าจอเลื่อนทะลุ */
+    width: 100%;
 }
 
 /* =========================================
-   Top Navbar (มีมิติ นูน และขอบชัดเจน)
+   2. Sidebar (หน้าต่างเมนูฝั่งซ้าย)
    ========================================= */
+.sidebar-wrapper {
+    background: #12161F;
+    border-right: 1px solid rgba(50, 100, 255, 0.2);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    transition: transform 0.3s ease-in-out;
+}
+
+/* ตั้งค่าเฉพาะตอนอยู่บนคอมพิวเตอร์ */
+.desktop-open {
+    width: 250px;
+    min-width: 250px;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    left: 0;
+}
+
+/* เมนูและการตกแต่ง */
+.sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 15px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    color: #94A3B8;
+    text-decoration: none;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+}
+
+.sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #E2E8F0;
+    transform: translateX(5px);
+}
+
+.sidebar-item.active {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.4);
+    color: #ffffff;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-item span {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.sidebar-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.05);
+    margin: 10px 0;
+}
+
+.logout-btn {
+    background: transparent;
+    cursor: pointer;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #EF4444;
+    width: 100%;
+    font-family: inherit;
+    margin-top: auto;
+}
+
+.logout-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #F87171;
+    transform: translateX(5px);
+}
+
+.sidebar-profile {
+    margin-top: auto;
+    padding: 20px;
+    display: flex;
+    gap: 12px;
+    cursor: pointer;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: #0B0E14;
+    transition: background 0.3s ease;
+}
+
+.sidebar-profile:hover {
+    background: #1A1F2B;
+}
+
+.sidebar-profile-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(59, 130, 246, 0.5);
+}
+
+.sidebar-profile-name {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.sidebar-profile-sub {
+    margin: 0;
+    font-size: 0.75rem;
+    color: #A0A0B0;
+}
+
+/* =========================================
+   3. พื้นที่เนื้อหาหลัก (ฝั่งขวา)
+   ========================================= */
+.main-content-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow-y: auto;
+}
+
 .top-navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 15px 20px;
     background: linear-gradient(180deg, #1A1F2B 0%, #12161F 100%);
-    /* ไล่สีให้ดูนูน */
     border-bottom: 1px solid rgba(50, 100, 255, 0.3);
-    /* ขอบล่างสีน้ำเงินเรืองแสงนิดๆ */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
-    /* เงาใต้กล่อง */
     position: sticky;
     top: 0;
     z-index: 50;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .brand-title {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: 700;
     background: linear-gradient(90deg, #FFFFFF, #A0A0B0);
     -webkit-background-clip: text;
-    /* 🟢 ให้เคาะ Enter แล้วเพิ่มบรรทัดนี้เข้าไปครับ */
-        background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: 1px;
 }
@@ -59,7 +189,6 @@
     transform: scale(1.1);
 }
 
-/* 🌟 ไอคอนเกมสอยดาว (เรืองแสงและใหญ่กว่าเพื่อน) */
 .game-icon-glow {
     color: #FFD700 !important;
     filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
@@ -83,25 +212,108 @@
     }
 }
 
+.page-content {
+    flex: 1;
+    padding: 20px;
+    padding-bottom: 90px;
+}
+
 /* =========================================
-   Bottom Navbar (สำหรับมือถือ - ลอยและมีมิติ)
+   4. 📱 กฎเฉพาะมือถือ (หน้าจอเล็กกว่า 768px)
    ========================================= */
+@media (max-width: 768px) {
+    .frontend-layout-container {
+        flex-direction: column;
+        /* เปลี่ยนจากซ้าย-ขวา เป็น บน-ลงล่าง */
+    }
+
+    .main-content-wrapper {
+        width: 100%;
+        /* ให้หน้าหลักเต็มจอ ไม่โดนบีบ */
+    }
+
+    /* 🌟 บังคับ Sidebar ให้ลอยอยู่เหนือหน้าจอ (Fixed) */
+    .sidebar-wrapper {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 280px;
+        height: 100vh;
+        z-index: 1000;
+        box-shadow: 5px 0 25px rgba(0, 0, 0, 0.8);
+    }
+
+    /* เลื่อนเก็บไปทางซ้าย */
+    .mobile-closed {
+        transform: translateX(-100%);
+    }
+
+    /* สไลด์ออกมาโชว์ */
+    .mobile-open {
+        transform: translateX(0);
+    }
+
+    /* 🌟 แก้ปัญหาปุ่ม X พื้นหลังสีขาว */
+    .close-menu-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: rgba(255, 255, 255, 0.1);
+        /* สีเทาโปร่งแสง ไม่ใช่สีขาวทึบ */
+        border: none;
+        color: #ffffff;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        z-index: 1001;
+    }
+
+    .close-menu-btn:hover {
+        background: rgba(239, 68, 68, 0.5);
+        /* ชี้แล้วแดงนิดๆ */
+    }
+
+    .sidebar-brand {
+        padding-top: 25px !important;
+    }
+}
+
+/* ซ่อนปุ่ม X เมื่ออยู่บนหน้าจอคอมพิวเตอร์ */
+@media (min-width: 769px) {
+    .close-menu-btn {
+        display: none;
+    }
+}
+
+/* พื้นหลังมืดๆ ตอนเปิด Sidebar ในมือถือ */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(3px);
+    z-index: 999;
+}
+
+/* Bottom Navbar (สำหรับมือถือ) */
 .bottom-navbar {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
     background: linear-gradient(0deg, #12161F 0%, #1A1F2B 100%);
-    /* ไล่สีให้นูนขึ้น */
     border-top: 1px solid rgba(50, 100, 255, 0.3);
-    /* เส้นขอบด้านบนสีน้ำเงิน */
     box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.7);
-    /* เงาด้านบน */
     display: flex;
     justify-content: space-around;
     padding: 10px 0;
     padding-bottom: calc(10px + env(safe-area-inset-bottom));
-    /* รองรับจอมือถือไร้ขอบ */
     z-index: 50;
 }
 
@@ -110,41 +322,13 @@
     flex-direction: column;
     align-items: center;
     color: #6C7280;
-    /* สีเทาหม่นตอนยังไม่เลือก */
     text-decoration: none;
     font-size: 0.75rem;
     gap: 4px;
     transition: all 0.3s ease;
 }
 
-.bottom-nav-item span {
-    font-weight: 500;
-}
-
-/* เมื่อเมนูถูกเลือก (Active) ให้เป็นสีฟ้า/น้ำเงินเรืองแสง */
 .bottom-nav-item.active {
     color: #3B82F6;
     filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
-}
-
-.bottom-nav-item.active svg {
-    transform: translateY(-3px);
-    /* ไอคอนเด้งขึ้นนิดนึงตอนเลือก */
-}
-
-/* =========================================
-   พื้นที่เนื้อหาตรงกลาง
-   ========================================= */
-.main-content-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding-bottom: 70px;
-    /* เว้นที่ไว้ไม่ให้ Bottom Nav บังเนื้อหา */
-}
-
-.page-content {
-    flex: 1;
-    padding: 15px;
-    overflow-y: auto;
 }
