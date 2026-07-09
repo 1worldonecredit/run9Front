@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
-import { Gamepad, ShoppingCart, Bell, Home, Briefcase, TrendingUp, MessageCircle } from 'lucide-react';
+// 🌟 นำเข้า Users เพิ่มเติมสำหรับเมนูทีมงาน
+import { Gamepad, ShoppingCart, Bell, Home, Briefcase, TrendingUp, MessageCircle, Users } from 'lucide-react';
+// 🌟 นำเข้า CSS ใหม่ที่เพิ่งสร้าง
+import './layout.css'; 
 
 export default function Layout({ userProfile }) {
   const navigate = useNavigate();
@@ -14,11 +17,13 @@ export default function Layout({ userProfile }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // 🌟 อัปเดต: เพิ่มเมนู Team เข้าไปแล้ว
   const navItems = [
-    { path: '/dashboard', icon: <Home size={24} />, label: 'Home' },
-    { path: '/assets', icon: <Briefcase size={24} />, label: 'Assets' },
-    { path: '/market', icon: <TrendingUp size={24} />, label: 'Market' },
-    { path: '/chat', icon: <MessageCircle size={24} />, label: 'Chat' },
+    { path: '/dashboard', icon: <Home size={22} />, label: 'Home' },
+    { path: '/assets', icon: <Briefcase size={22} />, label: 'Assets' },
+    { path: '/market', icon: <TrendingUp size={22} />, label: 'Market' },
+    { path: '/team', icon: <Users size={22} />, label: 'Team' },
+    { path: '/chat', icon: <MessageCircle size={22} />, label: 'Chat' },
   ];
 
   return (
@@ -26,32 +31,36 @@ export default function Layout({ userProfile }) {
       
       {/* 🌟 1. Sidebar (แสดงเฉพาะบน Desktop) */}
       {!isMobile && (
-        <div className="desktop-sidebar">
-          <div className="sidebar-brand">9 Plus</div>
+        <div className="desktop-sidebar" style={{ width: '250px', background: '#12161F', borderRight: '1px solid rgba(50, 100, 255, 0.2)' }}>
+          <div className="sidebar-brand" style={{ padding: '20px', fontSize: '1.5rem', fontWeight: 'bold' }}>9 Plus</div>
           
-          {/* พื้นที่เมนู (จะดันให้ตัวเองยืดสุด เพื่อผลัก Profile ลงไปข้างล่าง) */}
-          <div className="sidebar-menu">
+          <div className="sidebar-menu" style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '0 15px' }}>
             {navItems.map(item => (
               <Link 
                 key={item.path} 
                 to={item.path} 
                 className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
+                style={{ 
+                  display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', 
+                  color: location.pathname === item.path ? '#3B82F6' : '#6C7280',
+                  textDecoration: 'none', borderRadius: '8px',
+                  background: location.pathname === item.path ? 'rgba(59, 130, 246, 0.1)' : 'transparent'
+                }}
               >
                 {item.icon} <span>{item.label}</span>
               </Link>
             ))}
           </div>
 
-          {/* 🌟 พื้นที่ Profile ด้านล่างสุดของ Sidebar */}
-          <div className="sidebar-profile" onClick={() => navigate('/profile')}>
+          <div className="sidebar-profile" onClick={() => navigate('/profile')} style={{ marginTop: 'auto', padding: '20px', display: 'flex', gap: '10px', cursor: 'pointer', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
             <img 
               src={userProfile?.image || 'https://via.placeholder.com/40'} 
               alt="Profile" 
-              className="sidebar-profile-img"
+              style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
             />
             <div className="sidebar-profile-info">
-              <p className="sidebar-profile-name">{userProfile?.name || 'ยังไม่ได้ระบุชื่อ'}</p>
-              <p className="sidebar-profile-sub">{userProfile?.phone || 'ยังไม่ได้ระบุเบอร์โทร'}</p>
+              <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 'bold' }}>{userProfile?.name || 'ยังไม่ได้ระบุชื่อ'}</p>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: '#A0A0B0' }}>{userProfile?.phone || 'ยังไม่ได้ระบุเบอร์โทร'}</p>
             </div>
           </div>
         </div>
@@ -66,27 +75,22 @@ export default function Layout({ userProfile }) {
           
           <div className="nav-actions">
           
-            {/* 🌟 NEW: เพิ่มปุ่มจอยเกมเข้าสู่ 9 PLUS SLOTS ให้โดดเด่นสะดุดตา */}
+            {/* 🌟 ปรับปรุง: เกมสอยดาว (เพิ่มคลาส game-icon-glow และปรับ size=32 ให้เด่นสุดๆ) */}
             <Gamepad 
-              className="nav-icon" 
-              color="#FFD700" 
-              style={{ 
-                cursor: 'pointer', 
-                filter: 'drop-shadow(0 0 5px rgba(255,215,0,0.5))',
-                marginRight: '5px'
-              }} 
+              size={32}
+              className="nav-icon game-icon-glow" 
               onClick={() => navigate('/game')} 
             />
 
-            <ShoppingCart className="nav-icon" onClick={() => navigate('/cart')} />
-            <Bell className="nav-icon" onClick={() => navigate('/notifications')} />
+            <ShoppingCart size={24} className="nav-icon" onClick={() => navigate('/cart')} />
+            <Bell size={24} className="nav-icon" onClick={() => navigate('/notifications')} />
             
-            {/* 🌟 อัปเดต: โชว์รูปโปรไฟล์ด้านบน "เฉพาะในมือถือ" เท่านั้น */}
+            {/* โชว์รูปโปรไฟล์ด้านบน "เฉพาะในมือถือ" เท่านั้น */}
             {isMobile && (
               <img 
                 src={userProfile?.image || 'https://via.placeholder.com/35'} 
                 alt="Profile" 
-                style={{ width: '35px', height: '35px', borderRadius: '50%', cursor: 'pointer', objectFit: 'cover', border: '2px solid var(--earth-primary)' }}
+                style={{ width: '35px', height: '35px', borderRadius: '50%', cursor: 'pointer', objectFit: 'cover', border: '2px solid #3B82F6' }}
                 onClick={() => navigate('/profile')}
               />
             )}

@@ -1,0 +1,150 @@
+/* =========================================
+   Theme: Dark & Dimensional (สำหรับ Layout หลัง Login)
+   ========================================= */
+
+/* โครงสร้างหลัก */
+.frontend-layout-container {
+    min-height: 100vh;
+    background-color: #0B0E14;
+    /* สีพื้นหลังดำอมน้ำเงินเข้มแบบเรฟเฟอเรนซ์ */
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+}
+
+/* =========================================
+   Top Navbar (มีมิติ นูน และขอบชัดเจน)
+   ========================================= */
+.top-navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: linear-gradient(180deg, #1A1F2B 0%, #12161F 100%);
+    /* ไล่สีให้ดูนูน */
+    border-bottom: 1px solid rgba(50, 100, 255, 0.3);
+    /* ขอบล่างสีน้ำเงินเรืองแสงนิดๆ */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+    /* เงาใต้กล่อง */
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.brand-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(90deg, #FFFFFF, #A0A0B0);
+    -webkit-background-clip: text;
+    /* 🟢 ให้เคาะ Enter แล้วเพิ่มบรรทัดนี้เข้าไปครับ */
+        background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 1px;
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.nav-icon {
+    color: #A0A0B0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.nav-icon:hover {
+    color: #FFFFFF;
+    transform: scale(1.1);
+}
+
+/* 🌟 ไอคอนเกมสอยดาว (เรืองแสงและใหญ่กว่าเพื่อน) */
+.game-icon-glow {
+    color: #FFD700 !important;
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+    animation: goldPulse 2s infinite;
+}
+
+@keyframes goldPulse {
+    0% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.4));
+    }
+
+    50% {
+        transform: scale(1.15);
+        filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8));
+    }
+
+    100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.4));
+    }
+}
+
+/* =========================================
+   Bottom Navbar (สำหรับมือถือ - ลอยและมีมิติ)
+   ========================================= */
+.bottom-navbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(0deg, #12161F 0%, #1A1F2B 100%);
+    /* ไล่สีให้นูนขึ้น */
+    border-top: 1px solid rgba(50, 100, 255, 0.3);
+    /* เส้นขอบด้านบนสีน้ำเงิน */
+    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.7);
+    /* เงาด้านบน */
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    /* รองรับจอมือถือไร้ขอบ */
+    z-index: 50;
+}
+
+.bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #6C7280;
+    /* สีเทาหม่นตอนยังไม่เลือก */
+    text-decoration: none;
+    font-size: 0.75rem;
+    gap: 4px;
+    transition: all 0.3s ease;
+}
+
+.bottom-nav-item span {
+    font-weight: 500;
+}
+
+/* เมื่อเมนูถูกเลือก (Active) ให้เป็นสีฟ้า/น้ำเงินเรืองแสง */
+.bottom-nav-item.active {
+    color: #3B82F6;
+    filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
+}
+
+.bottom-nav-item.active svg {
+    transform: translateY(-3px);
+    /* ไอคอนเด้งขึ้นนิดนึงตอนเลือก */
+}
+
+/* =========================================
+   พื้นที่เนื้อหาตรงกลาง
+   ========================================= */
+.main-content-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 70px;
+    /* เว้นที่ไว้ไม่ให้ Bottom Nav บังเนื้อหา */
+}
+
+.page-content {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+}

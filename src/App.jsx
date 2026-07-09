@@ -21,7 +21,7 @@ import Promo from './pages/Promo';
 import PlayHistory from './pages/PlayHistory';
 import Deposit from './pages/Deposit';
 import AddUsersName from './pages/AddUsersName'
-
+import Team from './pages/Team'
 
 function App() {
   // -------------------------------------------------------------
@@ -104,7 +104,7 @@ function App() {
             <Route path="/play-history" element={<PlayHistory />} />
             <Route path="/deposit" element={<Deposit />} />
             <Route path="/addusersname" element={<AddUsersName />} />
-
+             <Route path="/team" element={<Team/>} />
           </Route>
             <Route path="/prelogin" element={<Prelogin/>} />
           <Route path="/promo" element={<Promo />} />

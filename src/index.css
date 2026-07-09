@@ -723,6 +723,8 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   /* แสงออร่ารอบตัวอักษร */
+  /* 🟢 ให้เคาะ Enter แล้วเพิ่มบรรทัดนี้เข้าไปครับ */
+    background-clip: text;
   text-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
   letter-spacing: 2px;
 }
