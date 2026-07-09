@@ -1,57 +1,90 @@
-
-
-:root {
-  --primary-color: #1e3a8a;
-  --secondary-color: #f59e0b;
-  --bg-color: #f3f4f6;
-  /* สีเทาอ่อนเป็นพื้นหลังเว็บ */
-  --surface-color: #ffffff;
-  --text-primary: #1f2937;
-  --text-secondary: #6b7280;
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --radius: 12px;
-}
-
-* {
-  box-sizing: border-box;
+/* =========================================
+   Global Reset & Scrollbar (ล้างขอบขาวและแต่ง Scrollbar)
+   ========================================= */
+html, body, #root {
   margin: 0;
   padding: 0;
-  font-family: 'Prompt', sans-serif;
-}
-
-/* ตรงนี้แหละครับที่จะทำให้พื้นหลังเป็นสีเทา และให้การ์ดดูมีมิติเด่นขึ้นมา */
-body {
-  background-color: var(--bg-color);
-  color: var(--text-primary);
-}
-
-.app-container {
   width: 100%;
-  max-width: 1200px;
-  /* จำกัดความกว้างสุดบนจอคอมขนาดใหญ่ เพื่อไม่ให้เนื้อหายืดเกินไป */
-  margin: 0 auto;
   min-height: 100vh;
-  background: var(--surface-color);
-  position: relative;
-  box-shadow: var(--shadow-lg);
-  padding-bottom: 70px;
+  background-color: #121217; /* ใส่สีพื้นหลังหลักกันขอบขาวโผล่ */
+  overflow-x: hidden; /* ป้องกันการเลื่อนซ้ายขวาที่ไม่ได้ตั้งใจ */
 }
 
-/* Navbar */
+/* แต่ง Scrollbar ให้ดูล้ำโลกอนาคต (เส้นเล็กๆ สีทอง) */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 215, 0, 0.3); /* สีทองโปร่งแสง */
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 215, 0, 0.8);
+}
+
+/* =========================================
+   Wrapper (ครอบพื้นหลังให้เต็มทุกสัดส่วน)
+   ========================================= */
+.prelogin-wrapper, .login-wrapper {
+  min-height: 100vh;
+  width: 100%;
+  /* แก้ปัญหาขอบขาว: ใช้ background-attachment: fixed ให้ภาพพื้นหลังติดหนึบ ไม่เลื่อนตามเนื้อหา */
+  background: radial-gradient(circle at 80% 30%, #3a2528 0%, #1e1e26 40%, #121217 100%);
+  background-attachment: fixed; 
+  background-size: cover;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================================
+   Top Navbar (จัดระเบียบให้ดูดีทั้งมือถือและคอม)
+   ========================================= */
 .top-navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
-  background: var(--surface-color);
-  box-shadow: var(--shadow-sm);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  padding: 20px 24px;
+  background: transparent;
+  width: 100%;
+  max-width: 1200px; /* จำกัดความกว้างในจอคอมไม่ให้โล่งเกินไป */
+  margin: 0 auto; /* จัดให้อยู่กึ่งกลาง */
+  box-sizing: border-box;
+  z-index: 10; /* ให้อยู่ด้านบนสุดเสมอ */
 }
 
+/* =========================================
+   Main Content Area (พื้นที่ตรงกลาง)
+   ========================================= */
+.prelogin-content {
+  flex: 1; /* ดันตัวเองให้เต็มพื้นที่ที่เหลือจาก Navbar */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* =========================================
+   Futuristic Glass Card (ปรับให้พอดีมือถือ)
+   ========================================= */
+.login-glass-card, .glass-card {
+  background: rgba(20, 20, 30, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  border-radius: 24px;
+  padding: 40px 30px;
+  width: 100%;
+  max-width: 380px;
+  box-sizing: border-box; /* สำคัญมาก: ไม่ให้ padding ดันการ์ดจนล้นจอ */
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 215, 0, 0.05);
+  animation: cardFloat 0.8s ease-out forwards;
+  /* ให้ขอบมีระยะห่างจากด้านบน-ล่าง ในกรณีที่จอมือถือเล็กมาก */
+  margin: 20px auto; 
+}
 .brand-title {
   font-size: 1.25rem;
   font-weight: 700;
