@@ -16,30 +16,32 @@ export default function Assets() {
   const [month, setMonth] = useState(currentMonth); 
   const [page, setPage] = useState(1);
 
-
-
-  // 🌟 ดึงข้อมูล User จาก LocalStorage แบบปลอดภัย
+// 🌟 ดึงข้อมูล Username จาก LocalStorage (หน้า Assets.jsx)
+  let username = localStorage.getItem('username') || localStorage.getItem('Username');
   const userStr = localStorage.getItem('user') || localStorage.getItem('userProfile');
-  let userId = null;
-
-  if (userStr) {
+  
+  if (!username && userStr) {
     try {
-        const parsedUser = JSON.parse(userStr);
-        userId = parsedUser.Id || parsedUser.id || parsedUser.UserId; 
-    } catch (error) {
-        console.error("อ่านข้อมูล User ไม่ได้");
+      const parsed = JSON.parse(userStr);
+      // แกะหาจากข้างใน JSON
+      username = parsed.username || parsed.Username || parsed.id; 
+    } catch (e) {
+      console.error("Parse JSON error");
     }
-}
+  }
 
-// ถ้าไม่มี userId ให้เด้งกลับไปหน้า Login ทันที ป้องกันการดึงข้อมูลผิดคน
-if (!userId) {
-    alert("กรุณาเข้าสู่ระบบใหม่");
-    window.location.href = '/login'; // เปลี่ยนเป็น path หน้า login ของคุณ
-}
+  // ถ้าควานหาทุกวิถีทางแล้วยังไม่ได้ ค่อยเตะออก
+  if (!username || username === 'undefined') {
+      alert("เซสชั่นไม่สมบูรณ์ กรุณาเข้าสู่ระบบใหม่");
+      // เคลียร์ค่าที่ตกค้างทิ้ง
+      localStorage.clear(); 
+      window.location.href = '/login'; 
+      return; // 🌟 ต้องมี return เพื่อหยุดการทำงานโค้ดด้านล่าง
+  }
 
   const fetchAssets = () => {
     setLoading(true);
-    let url = `https://api.run9.app/api/wallet/assets/${userId}?page=${page}&limit=20`;
+    let url = `https://api.run9.app/api/wallet/assets/${username }?page=${page}&limit=20`;
     if (month) url += `&month=${month}`;
 
     fetch(url)
