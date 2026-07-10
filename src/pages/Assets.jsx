@@ -16,8 +16,26 @@ export default function Assets() {
   const [month, setMonth] = useState(currentMonth); 
   const [page, setPage] = useState(1);
 
+
+
+  // 🌟 ดึงข้อมูล User จาก LocalStorage แบบปลอดภัย
   const userStr = localStorage.getItem('user') || localStorage.getItem('userProfile');
-  const userId = userStr ? (JSON.parse(userStr).Id || JSON.parse(userStr).id) : 1;
+  let userId = null;
+
+  if (userStr) {
+    try {
+        const parsedUser = JSON.parse(userStr);
+        userId = parsedUser.Id || parsedUser.id || parsedUser.UserId; 
+    } catch (error) {
+        console.error("อ่านข้อมูล User ไม่ได้");
+    }
+}
+
+// ถ้าไม่มี userId ให้เด้งกลับไปหน้า Login ทันที ป้องกันการดึงข้อมูลผิดคน
+if (!userId) {
+    alert("กรุณาเข้าสู่ระบบใหม่");
+    window.location.href = '/login'; // เปลี่ยนเป็น path หน้า login ของคุณ
+}
 
   const fetchAssets = () => {
     setLoading(true);

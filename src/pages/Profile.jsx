@@ -229,7 +229,8 @@ export default function Profile() {
           <div>
             <div style={{ color: '#3B82F6', fontSize: '0.7rem', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '4px' }}>ACCOUNT USER</div>
             <div style={{ color: '#fff', fontSize: '1.4rem', fontWeight: 'bold', marginBottom: '4px' }}>{username}</div>
-            <div style={{ color: '#94A3B8', fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '8px', display: 'inline-block' }}>ID: 1111</div>
+           
+             <div className="text-gray-400">ID: {profile.Id || 'ไม่ระบุ'}</div>
           </div>
         </div>
 
