@@ -117,7 +117,8 @@ export default function Market() {
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: '#64748B', gridColumn: '1 / -1' }}>กำลังโหลด...</div>
         ) : tasks.filter(t => t.OrderType === activeCategory).length > 0 ? (
-          tasks.filter(t => t.OrderType === activeCategory).map(task => (
+          // หลังแก้ (เพิ่ม t.Username !== myUsername):
+              tasks.filter(t => t.OrderType === activeCategory && t.Username !== myUsername).map(task => (
             <div key={task.Id} className="task-card">
               
               <div className="task-card-header">

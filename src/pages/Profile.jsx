@@ -128,8 +128,10 @@ export default function Profile() {
     setPreviewImage(null); // เคลียร์ Preview
   };
 
-  const handleSaveBankAccount = async (e) => {
+ const handleSaveBankAccount = async (e) => {
     e.preventDefault(); 
+    
+    // เช็กตัวแปร formAccNumber ให้ตรงกับ State ที่คุณสร้างไว้
     if (!formBankCode || !formAccNumber) return alert('กรุณากรอกข้อมูลให้ครบทุกช่องครับ');
     if (!formBankBook) return alert('กรุณาอัปโหลดภาพหน้าสมุดบัญชีด้วยครับ');
     
@@ -138,7 +140,13 @@ export default function Profile() {
       const res = await fetch('https://api.run9.app/api/user/bank', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, bankCode: formBankCode, accNumber: formAccNumber, accName: fullName, bankBookImage: formBankBook })
+        body: JSON.stringify({ 
+            username: username, 
+            bankName: formBankCode, // 🌟 เปลี่ยนชื่อ Key เป็น bankName และส่งชื่อธนาคารไป
+            accNumber: formAccNumber, 
+            accName: fullName, 
+            bankBookImage: formBankBook 
+        })
       });
       const data = await res.json();
       
@@ -146,18 +154,17 @@ export default function Profile() {
         alert(data.message);
         setIsBankModalOpen(false); 
         setFormBankCode('');
-        setFormAccountNumber('');
+        setFormAccNumber(''); // 🌟 แก้ชื่อให้ตรงกับตัวแปรที่รับค่า (สมมติว่าชื่อ setFormAccNumber)
         setFormBankBook(null);
         fetchProfileData(); 
       } else {
-        alert("❌ " + data.error);
+        alert("❌ " + (data.error || data.message));
       }
     } catch (err) {
       alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
     }
     setSaving(false);
-  };
-
+    };
   const handleLogout = () => {
     if(window.confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
       localStorage.removeItem('username');
@@ -328,11 +335,18 @@ export default function Profile() {
 
             <form onSubmit={handleSaveBankAccount} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               
-              <div>
+             <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', color: '#94A3B8', marginBottom: '5px' }}>ธนาคาร</label>
                 <select value={formBankCode} onChange={(e) => setFormBankCode(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: '#0B0E14', color: '#fff', fontSize: '0.95rem', outline: 'none' }} required>
                   <option value="" style={{color: '#000'}}>-- เลือกธนาคาร --</option>
-                  {bankMasterList.map((b, idx) => (<option key={idx} value={b.BankCode} style={{color: '#000'}}>🏛️ {b.BankName}</option>))}
+                  
+                  {/* 🌟 เปลี่ยน b.BankCode เป็น b.Id ตามฐานข้อมูลจริง */}
+                  {bankMasterList.map((b, idx) => (
+                  <option key={idx} value={b.BankName} style={{color: '#000'}}>
+                   🏛️ {b.BankName}
+                   </option>
+                  ))}
+                  
                 </select>
               </div>
 
