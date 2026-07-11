@@ -10,8 +10,9 @@ export default function Layout({ userProfile }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // 🌟 State ใหม่สำหรับเก็บข้อมูลโปรไฟล์ที่ดึงมาจาก API โดยตรง
+  // 🌟 State สำหรับเก็บข้อมูลโปรไฟล์และจำนวนแจ้งเตือน
   const [localProfile, setLocalProfile] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const username = localStorage.getItem('username');
 
   useEffect(() => {
@@ -24,19 +25,33 @@ export default function Layout({ userProfile }) {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // 🌟 ดึงข้อมูลโปรไฟล์ล่าสุดแบบ Real-time เพื่อให้รูปและชื่ออัปเดตตรงกับหน้า Profile
+  // 🌟 1. ดึงข้อมูล Profile
   useEffect(() => {
     if (username && username !== 'undefined') {
       fetch(`https://api.run9.app/api/user/profile-stats?username=${username}`)
         .then(res => res.json())
         .then(data => {
           if (data.success && data.profile) {
-            setLocalProfile(data.profile); // เก็บข้อมูลลง State
+            setLocalProfile(data.profile); 
           }
         })
         .catch(err => console.error("Error fetching profile for layout:", err));
     }
   }, [username]);
+
+  // 🌟 2. ดึงจำนวนการแจ้งเตือน (รีเฟรชทุกครั้งที่มีการเปลี่ยนหน้า)
+  useEffect(() => {
+    if (username && username !== 'undefined') {
+      fetch(`https://api.run9.app/api/notifications/${username}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setUnreadCount(data.notifications.length);
+          }
+        })
+        .catch(err => console.error("Error fetching notification count:", err));
+    }
+  }, [username, location.pathname]); 
 
   const handleLogout = () => {
     if(window.confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
@@ -54,7 +69,6 @@ export default function Layout({ userProfile }) {
     { path: '/chat', icon: <MessageCircle size={22} color="#EC4899" />, label: 'Chat' },
   ];
 
-  // 🌟 เตรียมตัวแปรสำหรับแสดงข้อมูล (เอาจาก API ก่อน ถ้าไม่มีค่อยดึงจาก Props หรือ LocalStorage)
   const displayImage = localProfile?.ProfileImageUrl || userProfile?.image || 'https://via.placeholder.com/40';
   const displayName = localProfile?.FirstName ? `${localProfile.FirstName} ${localProfile.LastName}`.trim() : (userProfile?.name || username || 'ยังไม่ได้ระบุชื่อ');
   const displayPhone = localProfile?.PhoneNumber || userProfile?.phone || 'ยังไม่ได้ระบุเบอร์โทร';
@@ -66,7 +80,7 @@ export default function Layout({ userProfile }) {
         <div className="sidebar-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>
       )}
 
-      {/* 🌟 1. Sidebar */}
+      {/* Sidebar */}
       <div className={`sidebar-wrapper ${isMobile ? (isMobileMenuOpen ? 'mobile-open' : 'mobile-closed') : 'desktop-open'}`}>
         
         {isMobile && (
@@ -95,7 +109,7 @@ export default function Layout({ userProfile }) {
           </button>
         </div>
 
-        {/* 🌟 ข้อมูล Profile ด้านล่าง Sidebar (ดึงค่าล่าสุดมาโชว์) */}
+        {/* Profile Sidebar */}
         <div className="sidebar-profile" onClick={() => navigate('/profile')}>
           <img 
             src={displayImage} 
@@ -109,7 +123,7 @@ export default function Layout({ userProfile }) {
         </div>
       </div>
 
-      {/* 🌟 2. พื้นที่เนื้อหาหลัก (ฝั่งขวา) */}
+      {/* พื้นที่เนื้อหาหลัก (ฝั่งขวา) */}
       <div className="main-content-wrapper">
         
         {/* Top Navbar */}
@@ -124,9 +138,18 @@ export default function Layout({ userProfile }) {
           <div className="nav-actions">
             <Gamepad size={32} className="nav-icon game-icon-glow" onClick={() => navigate('/game')} />
             <ShoppingCart size={24} className="nav-icon" onClick={() => navigate('/cart')} />
-            <Bell size={24} className="nav-icon" onClick={() => navigate('/notifications')} />
             
-            {/* 🌟 โชว์รูปโปรไฟล์ด้านบน (เอาเงื่อนไข isMobile ออก เพื่อให้โชว์ทั้งในคอมและมือถือ) */}
+            {/* 🌟 ไอคอนกระดิ่งพร้อม Badge ตัวเลขแจ้งเตือน */}
+            <div 
+              style={{ position: 'relative', display: 'flex', alignItems: 'center', cursor: 'pointer' }} 
+              onClick={() => navigate('/notifications')}
+            >
+              <Bell size={24} className="nav-icon" style={{ margin: 0 }} />
+              {unreadCount > 0 && (
+                <span className="nav-badge">{unreadCount}</span>
+              )}
+            </div>
+            
             <img 
               src={displayImage} 
               alt="Profile" 
@@ -136,12 +159,12 @@ export default function Layout({ userProfile }) {
           </div>
         </div>
 
-        {/* รูตรงกลางสำหรับเสียบเนื้อหาหน้าต่างๆ */}
+        {/* เนื้อหาหลัก */}
         <div className="page-content">
           <Outlet /> 
         </div>
 
-        {/* 🌟 3. Bottom Navbar (สำหรับมือถือ) */}
+        {/* Bottom Navbar (Mobile) */}
         {isMobile && (
           <div className="bottom-navbar">
             {navItems.map(item => (

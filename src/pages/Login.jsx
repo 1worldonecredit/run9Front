@@ -7,7 +7,7 @@ export default function Login({ onSwitchToRegister }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  // 🟢 ฟังก์ชัน Handle Login ของคุณ (คงไว้เหมือนเดิม 100%)
+  // 🟢 ฟังก์ชัน Handle Login (อัปเกรดระบบ Session และรองรับสกุลเงิน)
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
@@ -19,11 +19,33 @@ export default function Login({ onSwitchToRegister }) {
       const data = await response.json();
       
       if (response.ok) {
-        // เก็บข้อมูลลง LocalStorage
-        localStorage.setItem('username', data.username);
-        localStorage.setItem('country', data.country); 
+        // 🌟 1. ตรวจสอบประเทศเพื่อกำหนด "สกุลเงิน" และ "สัญลักษณ์"
+        let currencySymbol = '฿'; // ค่าเริ่มต้นเป็นบาท
+        let currencyCode = 'THB';
         
-        // ล็อกอินผ่านแล้วเด้งไปหน้า Profile
+        if (data.country && data.country.toLowerCase().includes('laos')) {
+          currencySymbol = '₭';
+          currencyCode = 'LAK';
+        }
+
+        // 🌟 2. แพ็กข้อมูลทั้งหมดเป็นก้อน JSON เพื่อความปลอดภัยและเป็นระเบียบ
+        const userProfile = {
+          id: data.id,
+          username: data.username,
+          country: data.country,
+          currencySymbol: currencySymbol,
+          currencyCode: currencyCode
+        };
+
+        // 🌟 3. เคลียร์ข้อมูลเก่าที่ค้างอยู่ (สำคัญมาก ป้องกัน Session ชนกัน!)
+        localStorage.clear(); 
+        
+        // 🌟 4. บันทึกก้อนข้อมูลลงไปใหม่ (แปลงเป็น String ก่อนเซฟ)
+        localStorage.setItem('userProfile', JSON.stringify(userProfile));
+        // แถมเซฟแยกไว้เผื่อระบบเก่าเรียกใช้ (กันพัง)
+        localStorage.setItem('username', data.username);
+        
+        // ล็อกอินผ่านแล้วเด้งไปหน้า Dashboard
         navigate('/Dashboard'); 
       } else {
         alert('❌ ' + (data.error || 'ข้อมูลผิดพลาด'));
@@ -32,7 +54,6 @@ export default function Login({ onSwitchToRegister }) {
       alert('⚠️ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
     }
   };
-
   return (
     <div className="login-wrapper">
       {/* 🟢 ปุ่มย้อนกลับ */}

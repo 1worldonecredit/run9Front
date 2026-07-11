@@ -332,3 +332,544 @@
     color: #3B82F6;
     filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
 }
+
+/* =========================================
+   🌟 Notifications Styles
+========================================= */
+.notif-container {
+    max-width: 600px;
+    /* ไม่ให้กว้างเต็มจอจนเกินไปบน PC */
+    margin: 0 auto;
+}
+
+.notif-card {
+    background: linear-gradient(145deg, #1A1F2B 0%, #12161F 100%);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.notif-header {
+    padding: 12px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+}
+
+.notif-header:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.notif-body {
+    padding: 0 15px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out, padding 0.3s ease;
+}
+
+.notif-body.expanded {
+    max-height: 200px;
+    /* กะความสูงให้พอดีกับข้อความ */
+    padding: 0 15px 15px 15px;
+}
+
+/* ปุ่มถังขยะ */
+.btn-trash {
+    background: transparent;
+    border: none;
+    color: #64748B;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-trash:hover {
+    color: #EF4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* กล่องยืนยันการลบ */
+.confirm-delete-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(239, 68, 68, 0.1);
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.confirm-delete-box button {
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.65rem;
+    cursor: pointer;
+    font-family: 'Prompt', sans-serif;
+}
+
+.btn-confirm-yes {
+    background: #EF4444;
+    color: white;
+}
+
+.btn-confirm-no {
+    background: rgba(255, 255, 255, 0.1);
+    color: #94A3B8;
+}
+
+/* 🔴 Badge ตัวเลขแจ้งเตือนสำหรับ Top Navbar */
+.nav-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #EF4444;
+    color: white;
+    font-size: 0.6rem;
+    font-weight: bold;
+    padding: 2px 5px;
+    border-radius: 10px;
+    min-width: 15px;
+    text-align: center;
+    border: 2px solid #0B0E14;
+    /* สีพื้นหลังของ Navbar เพื่อให้ดูมีมิติเจาะรู */
+}
+
+/* =========================================
+   🌟 Market P2P Styles (Theme: Dark & Orange)
+========================================= */
+.market-container {
+    padding-bottom: 90px;
+    color: #fff;
+}
+
+/* Header Promotion/Info Card */
+.market-promo-card {
+    background: linear-gradient(135deg, #FF8A00 0%, #E52E71 100%);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 10px 20px rgba(255, 138, 0, 0.2);
+}
+
+/* Filter Categories */
+.market-categories {
+    display: flex;
+    gap: 15px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+.market-categories::-webkit-scrollbar {
+    display: none;
+    /* Chrome/Safari */
+}
+
+.category-btn {
+    background: #1C1F26;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 12px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 80px;
+    color: #94A3B8;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.category-btn.active {
+    background: rgba(255, 138, 0, 0.1);
+    border-color: #FF8A00;
+    color: #FF8A00;
+}
+
+/* Task Cards */
+.task-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+
+@media (min-width: 768px) {
+    .task-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.task-card {
+    background: #1C1F26;
+    border-radius: 16px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.task-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.task-amount {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #fff;
+}
+
+.task-fee {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10B981;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+/* Soidao ID Card Style (User Info) */
+.soidao-id-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+
+.masked-text {
+    filter: blur(3px);
+    user-select: none;
+    opacity: 0.7;
+}
+
+.btn-accept-task {
+    width: 100%;
+    background: #FF8A00;
+    color: #fff;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: 0.2s;
+    font-family: 'Prompt', sans-serif;
+}
+
+.btn-accept-task:hover {
+    background: #e67e00;
+    box-shadow: 0 4px 15px rgba(255, 138, 0, 0.3);
+}
+
+/* =========================================
+   🌟 Dashboard Styles (Dark & Orange Theme)
+========================================= */
+.dashboard-container {
+    padding-bottom: 80px;
+    color: #fff;
+    font-family: 'Prompt', sans-serif;
+}
+
+/* 🌟 Hero Banner */
+.dash-hero-banner {
+    background: linear-gradient(135deg, #FF8A00 0%, #E52E71 100%);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 8px 20px rgba(255, 138, 0, 0.25);
+    position: relative;
+    overflow: hidden;
+}
+
+/* 🌟 เมนูลัด (Quick Actions - เติมเงิน/ถอนเงิน) */
+.dash-quick-actions {
+    display: flex;
+    gap: 15px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    scrollbar-width: none;
+}
+
+.dash-quick-actions::-webkit-scrollbar {
+    display: none;
+}
+
+.dash-action-btn {
+    background: #1C1F26;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 15px;
+    min-width: 85px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.dash-action-btn:hover {
+    background: rgba(255, 138, 0, 0.1);
+    border-color: #FF8A00;
+    transform: translateY(-2px);
+}
+
+/* 🌟 สไลด์ร้านค้ายอดนิยม (Horizontal Scroll) */
+.dash-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.shop-horizontal-list {
+    display: flex;
+    gap: 15px;
+    overflow-x: auto;
+    padding-bottom: 15px;
+    scrollbar-width: none;
+    scroll-snap-type: x mandatory;
+}
+
+.shop-horizontal-list::-webkit-scrollbar {
+    display: none;
+}
+
+.shop-card {
+    min-width: 260px;
+    background: #1C1F26;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    scroll-snap-align: start;
+}
+
+/* 🌟 สินค้าแนะนำ (Grid: 2 แถวในมือถือ, 4 แถวใน PC) */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    /* มือถือ 2 คอลัมน์ */
+    gap: 15px;
+}
+
+@media (min-width: 768px) {
+    .product-grid {
+        grid-template-columns: repeat(4, 1fr);
+        /* PC 4 คอลัมน์ */
+    }
+}
+
+.product-card {
+    background: #1C1F26;
+    border-radius: 16px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.btn-add-cart {
+    width: 100%;
+    background: #FF8A00;
+    color: #fff;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: auto;
+    transition: 0.2s;
+}
+
+.btn-add-cart:hover {
+    background: #e67e00;
+}
+
+/* =========================================
+   🌟 TopUp P2P Styles (Theme: Dark & Orange)
+========================================= */
+.topup-container {
+    padding: 20px 15px;
+    padding-bottom: 90px;
+    font-family: 'Prompt', sans-serif;
+    background: #0B0E14;
+    min-height: 100vh;
+    color: #fff;
+}
+
+.topup-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.topup-info-card {
+    background: linear-gradient(145deg, #1A1F2B 0%, #12161F 100%);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid rgba(255, 138, 0, 0.15);
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.topup-info-card::before {
+    content: '';
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    background: radial-gradient(circle, rgba(255, 138, 0, 0.1) 0%, transparent 70%);
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+}
+
+.topup-form-box {
+    background: #1C1F26;
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.topup-input-wrapper {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+.topup-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 15px 15px 15px 45px;
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: bold;
+    outline: none;
+    box-sizing: border-box;
+    transition: 0.3s;
+}
+
+.topup-input:focus {
+    border-color: #FF8A00;
+    box-shadow: 0 0 10px rgba(255, 138, 0, 0.1);
+}
+
+.btn-submit-topup {
+    width: 100%;
+    background: linear-gradient(90deg, #FF8A00 0%, #E52E71 100%);
+    color: #fff;
+    border: none;
+    padding: 15px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 10px 20px rgba(255, 138, 0, 0.3);
+    transition: 0.3s;
+}
+
+.btn-submit-topup:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 25px rgba(255, 138, 0, 0.4);
+}
+
+.btn-submit-topup:disabled {
+    background: #64748B;
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* =========================================
+   🌟 P2P Order Detail Styles 
+========================================= */
+.order-detail-container {
+    padding: 20px 15px;
+    padding-bottom: 90px;
+    font-family: 'Prompt', sans-serif;
+    background: #0B0E14;
+    min-height: 100vh;
+    color: #fff;
+}
+
+.receiver-card {
+    background: linear-gradient(145deg, #1A1F2B 0%, #12161F 100%);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    /* เน้นสีเขียวให้รู้ว่าปลอดภัย */
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.conf-code-box {
+    background: rgba(255, 138, 0, 0.1);
+    border: 1px dashed #FF8A00;
+    color: #FF8A00;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    letter-spacing: 2px;
+    margin: 15px 0;
+}
+
+.upload-slip-box {
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 30px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.3s;
+    background: rgba(255, 255, 255, 0.02);
+    margin-bottom: 20px;
+}
+
+.upload-slip-box:hover {
+    border-color: #3B82F6;
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.slip-preview {
+    width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}

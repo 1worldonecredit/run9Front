@@ -5,43 +5,41 @@ import { useNavigate } from 'react-router-dom';
 export default function Assets() {
   const navigate = useNavigate();
 
-  const [data, setData] = useState({ balance: 0, currency: 'THB', lastUpdated: null, transactions: [], totalPages: 1 });
+  const [data, setData] = useState({ balance: 0, lastUpdated: null, transactions: [], totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [showStatement, setShowStatement] = useState(false); 
-  
-  // 🌟 เปลี่ยนชื่อตัวแปรเป็น pendingDividend (เงินปันผลสะสม)
   const [pendingDividend, setPendingDividend] = useState(0);
+  
+  // 🌟 State สำหรับเก็บข้อมูลสกุลเงินจาก Profile
+  const [userProfile, setUserProfile] = useState({ username: '', currencySymbol: '฿', currencyCode: 'THB' });
 
   const currentMonth = new Date().toISOString().slice(0, 7);
   const [month, setMonth] = useState(currentMonth); 
   const [page, setPage] = useState(1);
 
-// 🌟 ดึงข้อมูล Username จาก LocalStorage (หน้า Assets.jsx)
-  let username = localStorage.getItem('username') || localStorage.getItem('Username');
-  const userStr = localStorage.getItem('user') || localStorage.getItem('userProfile');
-  
-  if (!username && userStr) {
-    try {
-      const parsed = JSON.parse(userStr);
-      // แกะหาจากข้างใน JSON
-      username = parsed.username || parsed.Username || parsed.id; 
-    } catch (e) {
-      console.error("Parse JSON error");
+  // 🌟 ดึง Profile และ สกุลเงินจาก LocalStorage
+  useEffect(() => {
+    const savedProfileStr = localStorage.getItem('userProfile');
+    if (savedProfileStr) {
+      try {
+        const parsed = JSON.parse(savedProfileStr);
+        setUserProfile({
+          username: parsed.username,
+          currencySymbol: parsed.currencySymbol || '฿',
+          currencyCode: parsed.currencyCode || 'THB'
+        });
+      } catch (e) {
+        navigate('/login');
+      }
+    } else {
+      navigate('/login');
     }
-  }
-
-  // ถ้าควานหาทุกวิถีทางแล้วยังไม่ได้ ค่อยเตะออก
-  if (!username || username === 'undefined') {
-      alert("เซสชั่นไม่สมบูรณ์ กรุณาเข้าสู่ระบบใหม่");
-      // เคลียร์ค่าที่ตกค้างทิ้ง
-      localStorage.clear(); 
-      window.location.href = '/login'; 
-      return; // 🌟 ต้องมี return เพื่อหยุดการทำงานโค้ดด้านล่าง
-  }
+  }, [navigate]);
 
   const fetchAssets = () => {
+    if (!userProfile.username) return; // รอให้ดึงชื่อเสร็จก่อนค่อย fetch
     setLoading(true);
-    let url = `https://api.run9.app/api/wallet/assets/${username }?page=${page}&limit=20`;
+    let url = `https://api.run9.app/api/wallet/assets/${userProfile.username}?page=${page}&limit=20`;
     if (month) url += `&month=${month}`;
 
     fetch(url)
@@ -58,25 +56,19 @@ export default function Assets() {
 
   useEffect(() => {
     fetchAssets();
-  }, [page, month]);
+  }, [page, month, userProfile.username]); // 🌟 รีเฟรชเมื่อ username พร้อม
 
-  // 🌟 ฟังก์ชันคำนวณเงินปันผลแบบ Real-time (ทำงานทุกๆ 0.1 วินาที)
+  // ฟังก์ชันคำนวณเงินปันผลแบบ Real-time
   useEffect(() => {
     if (data.balance > 0 && data.lastUpdated) {
       const rate = 0.10; // 10% ต่อปี
-      const lastUpdateDate = new Date(data.lastUpdated).getTime(); // แปลงเวลาล่าสุดเป็นมิลลิวินาที
-
-      // สั่งให้คำนวณใหม่ทุกๆ 100 มิลลิวินาที (0.1 วินาที)
+      const lastUpdateDate = new Date(data.lastUpdated).getTime();
       const intervalId = setInterval(() => {
-        const now = Date.now(); // เวลาปัจจุบันของเครื่อง
-        const diffTime = Math.max(0, now - lastUpdateDate); // ระยะเวลาที่ผ่านไป
-        const diffYears = diffTime / (1000 * 60 * 60 * 24 * 365); // แปลงเป็นจำนวนปี
-        
-        // เงินต้น * 10% * สัดส่วนของปี
+        const now = Date.now();
+        const diffTime = Math.max(0, now - lastUpdateDate);
+        const diffYears = diffTime / (1000 * 60 * 60 * 24 * 365);
         setPendingDividend(data.balance * rate * diffYears);
       }, 100);
-
-      // คืนค่าเพื่อล้างการทำงานเดิมเวลาคอมโพเนนต์ถูกรีเฟรช (ป้องกัน Memory Leak)
       return () => clearInterval(intervalId);
     } else {
       setPendingDividend(0);
@@ -85,46 +77,33 @@ export default function Assets() {
 
   const getTransactionFormat = (type) => {
     switch(type) {
-      case 'GAME_PRIZE': 
-        return { icon: <Gift size={16} color="#10B981" />, label: 'ถูกรางวัลสอยดาว', bg: 'rgba(16, 185, 129, 0.1)', color: '#10B981', sign: '+' };
-      case 'DEPOSIT': 
-        return { icon: <Download size={16} color="#3B82F6" />, label: 'เติมเงิน', bg: 'rgba(59, 130, 246, 0.1)', color: '#3B82F6', sign: '+' };
-      case 'WITHDRAWAL': 
-        return { icon: <Upload size={16} color="#EF4444" />, label: 'ถอนเงิน', bg: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', sign: '-' };
-      case 'DIVIDEND': // เปลี่ยนเป็น DIVIDEND
-        return { icon: <TrendingUp size={16} color="#F59E0B" />, label: 'รับเงินปันผล', bg: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B', sign: '+' };
-      default:
-        return { icon: <Wallet size={16} color="#94A3B8" />, label: 'ทำรายการ', bg: 'rgba(148, 163, 184, 0.1)', color: '#94A3B8', sign: '' };
+      case 'GAME_PRIZE': return { icon: <Gift size={16} color="#10B981" />, label: 'ถูกรางวัลสอยดาว', bg: 'rgba(16, 185, 129, 0.1)', color: '#10B981', sign: '+' };
+      case 'DEPOSIT': return { icon: <Download size={16} color="#3B82F6" />, label: 'เติมเงิน', bg: 'rgba(59, 130, 246, 0.1)', color: '#3B82F6', sign: '+' };
+      case 'WITHDRAWAL': return { icon: <Upload size={16} color="#EF4444" />, label: 'ถอนเงิน', bg: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', sign: '-' };
+      case 'DIVIDEND': return { icon: <TrendingUp size={16} color="#F59E0B" />, label: 'รับเงินปันผล', bg: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B', sign: '+' };
+      default: return { icon: <Wallet size={16} color="#94A3B8" />, label: 'ทำรายการ', bg: 'rgba(148, 163, 184, 0.1)', color: '#94A3B8', sign: '' };
     }
-  };
-
-  const getCurrencySymbol = (currencyCode) => {
-    const symbols = { 'THB': '฿', 'LAK': '₭', 'USD': '$' };
-    return symbols[currencyCode] || '฿';
   };
 
   if (loading && data.transactions.length === 0) {
     return <div style={{ textAlign: 'center', padding: '50px', color: '#94A3B8' }}>กำลังโหลดข้อมูลกระเป๋าเงิน...</div>;
   }
 
-  const currencySymbol = getCurrencySymbol(data.currency);
+  // 🌟 ใช้สัญลักษณ์จาก Profile ที่ดึงมา
+  const currencySymbol = userProfile.currencySymbol;
 
   return (
     <div style={{ padding: '15px', paddingBottom: '80px', fontFamily: "'Prompt', sans-serif", background: '#0B0E14', minHeight: '100vh', color: '#fff' }}>
       
-      {/* 💳 ส่วนยอดเงินและเงินปันผล: แบ่งเป็น 2 การ์ด ซ้าย-ขวา */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-        
-        {/* การ์ด 1: ยอดเงินคงเหลือ */}
         <div style={{ background: 'linear-gradient(180deg, #1A1F2B 0%, #12161F 100%)', padding: '15px', borderRadius: '16px', boxShadow: '0 8px 20px rgba(0,0,0,0.4)', border: '1px solid rgba(50, 100, 255, 0.2)', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: '-25px', right: '-25px', width: '70px', height: '70px', background: 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%)', borderRadius: '50%' }}></div>
-          <p style={{ margin: '0 0 4px 0', fontSize: '0.6rem', color: '#94A3B8', letterSpacing: '0.5px' }}>ยอดเงินคงเหลือ</p>
+          <p style={{ margin: '0 0 4px 0', fontSize: '0.6rem', color: '#94A3B8', letterSpacing: '0.5px' }}>ยอดเงินคงเหลือ ({userProfile.currencyCode})</p>
           <h1 style={{ margin: 0, fontSize: '0.8rem', fontWeight: 'bold', color: '#FACC15', textShadow: '0 0 10px rgba(250, 204, 21, 0.2)' }}>
             {currencySymbol}{new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(data.balance)}
           </h1>
         </div>
 
-        {/* การ์ด 2: เงินปันผลสะสม (โชว์ทศนิยม 6 ตำแหน่งให้เห็นตัวเลขวิ่ง) */}
         <div style={{ background: 'linear-gradient(180deg, #1A1F2B 0%, #12161F 100%)', padding: '15px', borderRadius: '16px', boxShadow: '0 8px 20px rgba(0,0,0,0.4)', border: '1px solid rgba(16, 185, 129, 0.2)', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: '-25px', right: '-25px', width: '70px', height: '70px', background: 'radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%)', borderRadius: '50%' }}></div>
           <p style={{ margin: '0 0 4px 0', fontSize: '0.6rem', color: '#10B981', letterSpacing: '0.5px' }}>เงินปันผล (10%/ปี)</p>
@@ -132,10 +111,8 @@ export default function Assets() {
             +{currencySymbol}{new Intl.NumberFormat('th-TH', { minimumFractionDigits: 6, maximumFractionDigits: 6 }).format(pendingDividend)}
           </h1>
         </div>
-
       </div>
 
-      {/* 🌟 ปุ่มเมนู 4 ปุ่ม */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '20px' }}>
         <button onClick={() => navigate('/deposit')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px 5px', borderRadius: '14px', background: 'linear-gradient(180deg, #1A1F2B 0%, #12161F 100%)', border: '1px solid rgba(59, 130, 246, 0.2)', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
           <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '8px', borderRadius: '50%' }}><Download size={18} color="#3B82F6" /></div>
@@ -158,7 +135,6 @@ export default function Assets() {
         </button>
       </div>
 
-      {/* 🌟 ปุ่มเปิด-ปิด Statement */}
       <button 
         onClick={() => setShowStatement(!showStatement)}
         style={{ 
@@ -171,7 +147,6 @@ export default function Assets() {
         <span style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>{showStatement ? 'ซ่อนรายการย้อนหลัง' : 'ดูรายการย้อนหลัง (Statement)'}</span>
       </button>
 
-      {/* 📄 ส่วนล่าง: Statement */}
       {showStatement && (
         <div style={{ animation: 'fadeIn 0.3s' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
@@ -211,7 +186,13 @@ export default function Assets() {
                       <h3 style={{ margin: '0 0 2px 0', fontSize: '0.8rem', color: isIncome ? '#10B981' : '#EF4444' }}>
                         {format.sign}{currencySymbol}{new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2 }).format(tx.Amount)}
                       </h3>
-                      <p style={{ margin: 0, fontSize: '0.6rem', color: '#64748B' }}>สำเร็จ</p>
+                     <p style={{ 
+                      margin: 0, 
+                      fontSize: '0.6rem', 
+                      color: tx.Status === 'PENDING' ? '#F59E0B' : (tx.Status === 'REJECTED' ? '#EF4444' : '#10B981') 
+                      }}>
+                       {tx.Status === 'PENDING' ? '⏳ รอตรวจสอบ' : (tx.Status === 'REJECTED' ? '❌ ถูกปฏิเสธ' : '✅ สำเร็จ')}
+                      </p>
                     </div>
                   </div>
                 );

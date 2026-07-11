@@ -20,8 +20,11 @@ import Layout from './Layout';
 import Promo from './pages/Promo';
 import PlayHistory from './pages/PlayHistory';
 import Deposit from './pages/Deposit';
-import AddUsersName from './pages/AddUsersName'
-import Team from './pages/Team'
+import AddUsersName from './pages/AddUsersName';
+import Team from './pages/Team';
+import TopUpMoney from './pages/TopUpMoney';
+import P2POrderDetail from './pages/P2POrderDetail';
+import MyP2POrders from './pages/MyP2POrders';
 
 function App() {
   // -------------------------------------------------------------
@@ -105,6 +108,9 @@ function App() {
             <Route path="/deposit" element={<Deposit />} />
             <Route path="/addusersname" element={<AddUsersName />} />
              <Route path="/team" element={<Team/>} />
+             <Route path="/topup" element={<TopUpMoney/>}/>
+             <Route element={<P2POrderDetail />} path="/p2p-order/:id" />
+             <Route element={<MyP2POrders />} path="/my-p2p" />
           </Route>
             <Route path="/prelogin" element={<Prelogin/>} />
           <Route path="/promo" element={<Promo />} />
