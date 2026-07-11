@@ -26,6 +26,7 @@ import TopUpMoney from './pages/TopUpMoney';
 import P2POrderDetail from './pages/P2POrderDetail';
 import MyP2POrders from './pages/MyP2POrders';
 
+
 function App() {
   // -------------------------------------------------------------
   // 2. สร้างตัวแปรเก็บข้อมูลผู้ใช้ (ใส่ค่าเริ่มต้นป้องกันหน้าขาว)
@@ -111,6 +112,7 @@ function App() {
              <Route path="/topup" element={<TopUpMoney/>}/>
              <Route element={<P2POrderDetail />} path="/p2p-order/:id" />
              <Route element={<MyP2POrders />} path="/my-p2p" />
+
           </Route>
             <Route path="/prelogin" element={<Prelogin/>} />
           <Route path="/promo" element={<Promo />} />

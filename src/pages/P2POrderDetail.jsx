@@ -1,204 +1,185 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, AlertTriangle, UploadCloud, Copy, Camera, User, CheckSquare } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ChevronLeft, Upload, CheckCircle, Clock, Copy, Image as ImageIcon } from 'lucide-react';
 
 export default function P2POrderDetail() {
+  const { orderId } = useParams();
   const navigate = useNavigate();
-  const { id } = useParams();
   
-  const [loading, setLoading] = useState(false);
-  const [slipImage, setSlipImage] = useState(null);
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [myUsername, setMyUsername] = useState('');
-  
-  // 🌟 ข้อมูลจำลอง (เดี๋ยวเราจะมาต่อ API ดึงของจริงกันทีหลัง)
-  const [order, setOrder] = useState({
-    id: id || '1001',
-    amount: 1500,
-    status: 'MATCHED', // PENDING, MATCHED, SLIP_UPLOADED, COMPLETED
-    confirmationCode: 'A8F9X',
-    requesterUsername: 'userlaos', // สมมติว่านี่คือคนที่สร้างคำขอฝากเงิน
-    receiverUsername: 'Admin', // สมมติว่าแอดมินเป็นคนกดรับงาน
-    receiverName: 'Admin 9Plus',
-    receiverBank: 'กสิกรไทย (KBank)',
-    receiverAccount: '098-765432-1',
-    slipUrl: null 
-  });
+  const [slipImage, setSlipImage] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-     const savedProfileStr = localStorage.getItem('userProfile');
-     if (savedProfileStr) {
-       try {
-         const parsed = JSON.parse(savedProfileStr);
-         if (parsed.username) setMyUsername(parsed.username);
-       } catch (e) {}
-     }
+    const profileStr = localStorage.getItem('userProfile');
+    if (profileStr) {
+      setMyUsername(JSON.parse(profileStr).username);
+    }
+    fetchOrderDetail();
   }, []);
 
-  // 🌟 เช็กว่าคนที่เปิดหน้านี้มา คือใคร?
-  const isRequester = myUsername === order.requesterUsername;
-  const isReceiver = myUsername === order.receiverUsername;
+  const fetchOrderDetail = async () => {
+    try {
+      const res = await fetch(`https://api.run9.app/api/p2p/order/${orderId}`);
+      const data = await res.json();
+      if (data.success) {
+        setOrder(data.order);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+    }
+    setLoading(false);
+  };
 
-  const handleFileChange = (e) => {
+  const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) setSlipImage(URL.createObjectURL(file));
-  };
-
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    alert('คัดลอกแล้ว: ' + text);
-  };
-
-  // 🌟 [มุมมองผู้ฝาก] กดยืนยันอัปโหลดสลิป
-  const handleSubmitSlip = (e) => {
-    e.preventDefault();
-    if (!slipImage) return alert("กรุณาแนบรูปภาพสลิป");
-    
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setOrder({ ...order, status: 'SLIP_UPLOADED', slipUrl: slipImage });
-      alert("✅ ส่งสลิปสำเร็จ! รอผู้ให้บริการตรวจสอบสักครู่");
-    }, 1500);
-  };
-
-  // 🌟 [มุมมองผู้รับงาน] กดยืนยันว่าได้เงินจริง จบงาน
-  const handleConfirmReceived = () => {
-    const confirm = window.confirm("คุณได้รับเงินเข้าบัญชีตามสลิปนี้เรียบร้อยแล้วใช่หรือไม่?\n\n*หากยืนยัน ระบบจะโอนเงิน Escrow ของคุณให้ผู้ใช้งานทันที");
-    if(confirm) {
-        setOrder({ ...order, status: 'COMPLETED' });
-        alert("🎉 ยืนยันสำเร็จ ระบบทำการกระทบยอดเรียบร้อยแล้ว!");
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setSlipImage(reader.result);
+      reader.readAsDataURL(file);
     }
   };
 
+  const handleUploadSlip = async () => {
+    if (!slipImage) return alert("กรุณาเลือกรูปสลิปก่อนครับ");
+    setIsProcessing(true);
+    try {
+      const res = await fetch('https://api.run9.app/api/p2p/upload-slip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.Id, slipImageBase64: slipImage })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("ส่งสลิปเรียบร้อย รอผู้รับงานตรวจสอบครับ");
+        fetchOrderDetail(); // รีเฟรชข้อมูล
+      } else {
+        alert(data.error);
+      }
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+    setIsProcessing(false);
+  };
+
+  const handleConfirmReceipt = async () => {
+    if (!window.confirm("คุณยืนยันว่าได้รับยอดเงินเข้าบัญชีจริงใช่หรือไม่? (การกระทำนี้ไม่สามารถยกเลิกได้)")) return;
+    
+    setIsProcessing(true);
+    try {
+      const res = await fetch('https://api.run9.app/api/p2p/confirm-receipt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.Id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("ทำรายการสำเร็จ! ระบบได้จัดการยอดเงินเรียบร้อยแล้ว");
+        navigate('/assets');
+      } else {
+        alert(data.error || data.message);
+      }
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+    setIsProcessing(false);
+  };
+
+  if (loading) return <div style={{ padding: '20px', color: '#fff', textAlign: 'center' }}>กำลังโหลด...</div>;
+  if (!order) return <div style={{ padding: '20px', color: '#fff', textAlign: 'center' }}>ไม่พบรายการ</div>;
+
+  const isRequester = myUsername === order.RequesterUsername;
+  const isMatcher = myUsername === order.MatchedUsername;
+  const currency = order.Currency || 'THB';
+
   return (
-    <div className="order-detail-container">
-      
-      <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px', paddingBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', padding: '8px', borderRadius: '10px', color: '#94A3B8', cursor: 'pointer' }}>
-          <ArrowLeft size={20} />
+    <div style={{ background: '#0B0E14', minHeight: '100vh', color: '#fff', fontFamily: "'Prompt', sans-serif" }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', padding: '15px', background: '#12161F', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#fff', display: 'flex', cursor: 'pointer' }}>
+          <ChevronLeft size={24} />
         </button>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#E2E8F0' }}>รายละเอียด P2P</h2>
-          <p style={{ margin: '2px 0 0 0', fontSize: '0.7rem', color: '#64748B' }}>
-            รายการ #{order.id} • {isRequester ? 'คุณคือผู้ฝากเงิน' : (isReceiver ? 'คุณคือผู้รับงาน' : 'ผู้เยี่ยมชม')}
+        <h3 style={{ margin: '0 auto', fontSize: '1rem', fontWeight: '500' }}>รายละเอียดคำขอ P2P</h3>
+        <div style={{ width: '24px' }}></div>
+      </div>
+
+      <div style={{ padding: '15px' }}>
+        
+        {/* Status Card */}
+        <div style={{ background: 'linear-gradient(180deg, #1A1F2B 0%, #12161F 100%)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: '15px', textAlign: 'center' }}>
+          <h2 style={{ margin: '0 0 5px 0', color: '#3B82F6', fontSize: '1.5rem' }}>
+            {new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2 }).format(order.Amount)} {currency}
+          </h2>
+          <p style={{ margin: 0, color: '#94A3B8', fontSize: '0.85rem' }}>
+            สถานะ: 
+            <span style={{ 
+              color: order.Status === 'COMPLETED' ? '#10B981' : (order.Status === 'SLIP_UPLOADED' ? '#F59E0B' : '#60A5FA'), 
+              fontWeight: 'bold', marginLeft: '5px' 
+            }}>
+              {order.Status === 'MATCHED' ? 'รอผู้ฝากโอนเงิน' : (order.Status === 'SLIP_UPLOADED' ? 'รอตรวจสอบสลิป' : 'สำเร็จ')}
+            </span>
           </p>
+          {order.ConfirmationCode && <p style={{ marginTop: '10px', fontSize: '0.75rem', color: '#E2E8F0' }}>รหัสอ้างอิง: {order.ConfirmationCode}</p>}
         </div>
-      </div>
 
-      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <p style={{ margin: '0 0 5px 0', color: '#94A3B8', fontSize: '0.85rem' }}>ยอดเงินสุทธิ (บาท)</p>
-        <h1 style={{ margin: 0, color: '#10B981', fontSize: '2.5rem' }}>
-          {new Intl.NumberFormat('th-TH').format(order.amount)}
-        </h1>
-      </div>
+        {/* 🌟 มุมมองของผู้ฝากเงิน (Requester) */}
+        {isRequester && order.Status !== 'COMPLETED' && (
+          <div style={{ background: '#12161F', padding: '15px', borderRadius: '12px', marginBottom: '15px' }}>
+            <h4 style={{ color: '#E2E8F0', marginTop: 0, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>โอนเงินไปยังบัญชี:</h4>
+            <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>ธนาคาร: <span style={{color: '#fff'}}>{order.BankName}</span></p>
+            <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>เลขบัญชี: <span style={{color: '#3B82F6', fontWeight: 'bold'}}>{order.AccountNumber}</span></p>
+            <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>ชื่อบัญชี: <span style={{color: '#fff'}}>{order.AccountName}</span></p>
 
-      {/* ======================================= */}
-      {/* 🔴 ส่วนสำหรับ "ผู้ฝากเงิน (Requester)" 🔴 */}
-      {/* ======================================= */}
-      {isRequester && (
-        <>
-          <div className="receiver-card">
-            <h4 style={{ margin: '0 0 15px 0', color: '#10B981', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
-              <CheckCircle size={18} /> ข้อมูลผู้ให้บริการ (โอนเข้าบัญชีนี้)
-            </h4>
-            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '12px', marginBottom: '15px' }}>
-              <p style={{ margin: '0 0 5px 0', fontSize: '0.75rem', color: '#94A3B8' }}>ธนาคาร</p>
-              <p style={{ margin: '0 0 15px 0', fontSize: '0.95rem', fontWeight: 'bold' }}>{order.receiverBank}</p>
-              
-              <p style={{ margin: '0 0 5px 0', fontSize: '0.75rem', color: '#94A3B8' }}>ชื่อบัญชี</p>
-              <p style={{ margin: '0 0 15px 0', fontSize: '0.95rem', fontWeight: 'bold' }}>{order.receiverName}</p>
-              
-              <p style={{ margin: '0 0 5px 0', fontSize: '0.75rem', color: '#94A3B8' }}>เลขบัญชี</p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold', letterSpacing: '1px', color: '#60A5FA' }}>{order.receiverAccount}</p>
-                <button onClick={() => copyToClipboard(order.receiverAccount)} style={{ background: 'rgba(96, 165, 250, 0.1)', border: 'none', padding: '6px 10px', borderRadius: '8px', color: '#60A5FA', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Copy size={14} /> คัดลอก
+            {order.Status === 'MATCHED' && (
+              <div style={{ marginTop: '20px' }}>
+                <input type="file" accept="image/*" id="slipUpload" style={{ display: 'none' }} onChange={handleImageChange} />
+                <label htmlFor="slipUpload" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '12px', background: 'rgba(59, 130, 246, 0.1)', border: '1px dashed #3B82F6', borderRadius: '8px', color: '#3B82F6', cursor: 'pointer', marginBottom: '15px' }}>
+                  <ImageIcon size={18} /> {slipImage ? 'เปลี่ยนรูปสลิป' : 'อัปโหลดสลิปโอนเงิน'}
+                </label>
+                {slipImage && <img src={slipImage} alt="Slip" style={{ width: '100%', borderRadius: '8px', marginBottom: '15px' }} />}
+                
+                <button onClick={handleUploadSlip} disabled={isProcessing} style={{ width: '100%', padding: '14px', background: '#3B82F6', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: isProcessing ? 'not-allowed' : 'pointer', opacity: isProcessing ? 0.7 : 1 }}>
+                  ยืนยันการโอนเงิน (ส่งสลิป)
                 </button>
               </div>
-            </div>
-            <p style={{ margin: '0 0 5px 0', fontSize: '0.8rem', color: '#94A3B8', textAlign: 'center' }}>รหัสยืนยันความปลอดภัย (ใส่ในบันทึกช่วยจำ)</p>
-            <div className="conf-code-box">{order.confirmationCode}</div>
+            )}
           </div>
+        )}
 
-          {order.status === 'MATCHED' && (
-             <form onSubmit={handleSubmitSlip}>
-                <label className="upload-slip-box" style={{ display: slipImage ? 'none' : 'block' }}>
-                  <Camera size={40} color="#64748B" style={{ margin: '0 auto 10px auto' }} />
-                  <h4 style={{ margin: '0 0 5px 0', color: '#E2E8F0' }}>อัปโหลดสลิปการโอนเงิน</h4>
-                  <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
-                </label>
-                {slipImage && (
-                  <div style={{ position: 'relative' }}>
-                    <button type="button" onClick={() => setSlipImage(null)} style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.7)', border: 'none', color: '#fff', padding: '5px 10px', borderRadius: '8px', cursor: 'pointer' }}>เปลี่ยนรูป</button>
-                    <img src={slipImage} alt="Slip Preview" className="slip-preview" />
-                  </div>
-                )}
-                <button type="submit" disabled={loading || !slipImage} style={{ width: '100%', background: loading || !slipImage ? '#64748B' : 'linear-gradient(90deg, #3B82F6 0%, #2563EB 100%)', color: '#fff', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: 'bold', cursor: loading || !slipImage ? 'not-allowed' : 'pointer' }}>
-                  {loading ? 'กำลังส่งข้อมูล...' : 'ฉันโอนเงินแล้ว (ส่งสลิป)'}
-                </button>
-             </form>
-          )}
-
-          {order.status === 'SLIP_UPLOADED' && (
-            <div style={{ textAlign: 'center', padding: '30px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '16px' }}>
-              <CheckCircle size={40} color="#10B981" style={{ margin: '0 auto 10px auto' }} />
-              <h3 style={{ margin: '0 0 5px 0', color: '#10B981' }}>รอผู้ให้บริการตรวจสอบ</h3>
-              <p style={{ margin: 0, fontSize: '0.8rem', color: '#A7F3D0' }}>กรุณารอสักครู่ ระบบจะเติมเงินให้อัตโนมัติ</p>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ======================================= */}
-      {/* 🔵 ส่วนสำหรับ "ผู้รับงาน (Receiver)" 🔵 */}
-      {/* ======================================= */}
-      {isReceiver && (
-        <>
-          <div style={{ background: '#1C1F26', padding: '15px', borderRadius: '12px', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
-             <p style={{ margin: '0 0 5px 0', fontSize: '0.8rem', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '5px' }}><User size={14}/> ผู้ที่ต้องการฝากเงิน</p>
-             <h3 style={{ margin: 0, color: '#fff' }}>@{order.requesterUsername}</h3>
-          </div>
-          
-          <div style={{ marginBottom: '20px' }}>
-            <p style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: '#E2E8F0' }}>รหัสยืนยันของงานนี้ (ใช้ตรวจสลิป)</p>
-            <div className="conf-code-box" style={{ margin: 0 }}>{order.confirmationCode}</div>
-          </div>
-
-          {order.status === 'MATCHED' && (
-             <div style={{ textAlign: 'center', padding: '30px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '16px', border: '1px dashed #3B82F6' }}>
-                <Clock size={40} color="#3B82F6" style={{ margin: '0 auto 10px auto' }} />
-                <h3 style={{ margin: '0 0 5px 0', color: '#60A5FA' }}>รอผู้ใช้งานโอนเงิน...</h3>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#93C5FD' }}>เมื่อผู้ใช้งานส่งสลิป สลิปจะปรากฏที่นี่</p>
-             </div>
-          )}
-
-          {order.status === 'SLIP_UPLOADED' && (
-             <div>
-                <h4 style={{ margin: '0 0 10px 0', color: '#E2E8F0' }}>สลิปหลักฐานการโอน</h4>
-                <img src={order.slipUrl} alt="Slip" style={{ width: '100%', borderRadius: '12px', border: '2px solid #10B981', marginBottom: '20px' }} />
+        {/* 🌟 มุมมองของผู้รับงาน (Matcher) */}
+        {isMatcher && order.Status !== 'COMPLETED' && (
+          <div style={{ background: '#12161F', padding: '15px', borderRadius: '12px', marginBottom: '15px' }}>
+            <h4 style={{ color: '#E2E8F0', marginTop: 0, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>ตรวจสอบการรับเงิน</h4>
+            
+            {order.Status === 'MATCHED' ? (
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <Clock size={40} color="#F59E0B" style={{ marginBottom: '10px' }} />
+                <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>กำลังรอผู้ฝากโอนเงินและแนบสลิป...</p>
+              </div>
+            ) : (
+              <div style={{ marginTop: '10px' }}>
+                <p style={{ color: '#10B981', fontSize: '0.85rem', textAlign: 'center', marginBottom: '10px' }}>ผู้ฝากอัปโหลดสลิปแล้ว กรุณาตรวจสอบยอดเงินในบัญชีของคุณ</p>
+                {order.SlipUrl && <img src={order.SlipUrl} alt="Slip" style={{ width: '100%', borderRadius: '8px', marginBottom: '15px', border: '1px solid rgba(255,255,255,0.1)' }} />}
                 
-                <button 
-                  onClick={handleConfirmReceived}
-                  style={{ width: '100%', background: 'linear-gradient(90deg, #10B981 0%, #059669 100%)', color: '#fff', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(16, 185, 129, 0.3)' }}
-                >
-                  <CheckSquare size={20} /> ยืนยันได้รับยอดเงินครบถ้วน
+                <button onClick={handleConfirmReceipt} disabled={isProcessing} style={{ width: '100%', padding: '14px', background: '#10B981', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: isProcessing ? 'not-allowed' : 'pointer', opacity: isProcessing ? 0.7 : 1 }}>
+                  ฉันได้รับเงินแล้ว (อนุมัติรายการ)
                 </button>
-             </div>
-          )}
-        </>
-      )}
+              </div>
+            )}
+          </div>
+        )}
 
-      {/* ======================================= */}
-      {/* 🟢 เมื่อสถานะเสร็จสมบูรณ์ (โชว์ให้เห็นทั้งคู่) 🟢 */}
-      {/* ======================================= */}
-      {order.status === 'COMPLETED' && (
-        <div style={{ textAlign: 'center', padding: '40px 20px', background: 'linear-gradient(145deg, #064E3B 0%, #022C22 100%)', borderRadius: '16px', border: '1px solid #10B981' }}>
-          <CheckCircle size={60} color="#34D399" style={{ margin: '0 auto 15px auto' }} />
-          <h2 style={{ margin: '0 0 10px 0', color: '#34D399' }}>ทำรายการสำเร็จ!</h2>
-          <p style={{ margin: 0, fontSize: '0.85rem', color: '#A7F3D0' }}>เงินถูกโอนเข้ากระเป๋าผู้รับและกระทบยอดเรียบร้อยแล้ว</p>
-        </div>
-      )}
+        {order.Status === 'COMPLETED' && (
+          <div style={{ textAlign: 'center', padding: '30px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+            <CheckCircle size={50} color="#10B981" style={{ marginBottom: '10px' }} />
+            <h3 style={{ color: '#10B981', margin: 0 }}>รายการสำเร็จเรียบร้อย</h3>
+            <p style={{ color: '#94A3B8', fontSize: '0.8rem', marginTop: '10px' }}>ขอบคุณที่ใช้บริการระบบ P2P</p>
+          </div>
+        )}
 
+      </div>
     </div>
   );
 }

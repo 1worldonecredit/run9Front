@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Bell, Download, Upload, ShieldCheck, CheckCircle } from 'lucide-react';
+import { Search, Bell, Download, Upload, ShieldCheck, FileText, CheckCircle, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Market() {
@@ -20,7 +20,6 @@ export default function Market() {
     fetchTasks();
   }, []);
 
-  // 🌟 ดึงข้อมูลจาก API จริง
   const fetchTasks = async () => {
     try {
       const response = await fetch('https://api.run9.app/api/p2p/orders/pending');
@@ -33,14 +32,12 @@ export default function Market() {
     }
   };
 
-  // 🌟 ฟังก์ชันเบลอชื่อ User (เช่น somsak -> som***ak)
   const maskUsername = (name) => {
     if (!name) return 'User***';
     if (name.length <= 4) return name.substring(0, 1) + '***' + name.substring(name.length - 1);
     return name.substring(0, 3) + '***' + name.substring(name.length - 2);
   };
 
-  // 🌟 ฟังก์ชันกดรับงาน
   const handleAcceptTask = async (orderId, requiredAmount) => {
     const confirmAccept = window.confirm(`ระบบจะทำการหักเงิน ${requiredAmount} ${currencySymbol} จากกระเป๋าของคุณเพื่อเป็นตัวกลาง (Escrow) ทันที\n\nยืนยันการรับงานนี้หรือไม่?`);
     
@@ -56,11 +53,11 @@ export default function Market() {
 
       if (data.success) {
         alert(`✅ ${data.message}\nรหัสยืนยันของคุณคือ: ${data.confirmationCode}`);
-        fetchTasks(); // รีเฟรชหน้าจอ เอางานที่โดนรับแล้วออกไป
-        // อนาคตสามารถ navigate ไปหน้า Order Details ได้
+        fetchTasks(); 
+        navigate('/my-p2p-orders'); // 🌟 รับงานเสร็จ พาไปหน้ารายการของฉันทันที
       } else {
         alert(`❌ ${data.message}`);
-        fetchTasks(); // ดึงข้อมูลใหม่ เผื่อโดนแย่งงานไปแล้ว
+        fetchTasks(); 
       }
     } catch (error) {
       alert("⚠️ เกิดข้อผิดพลาดในการเชื่อมต่อ");
@@ -68,93 +65,112 @@ export default function Market() {
   };
 
   return (
-    <div className="market-container" style={{ padding: '20px 15px', fontFamily: "'Prompt', sans-serif" }}>
+    <div style={{ padding: '20px 15px', paddingBottom: '90px', fontFamily: "'Prompt', sans-serif", background: '#0B0E14', minHeight: '100vh', color: '#fff' }}>
       
-      {/* 🌟 Header Search & Notif */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <div style={{ position: 'relative', flex: 1, marginRight: '15px' }}>
-          <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '12px', top: '10px' }} />
+      {/* 🌟 Header & Actions */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', gap: '10px' }}>
+        <div style={{ position: 'relative', flex: 1 }}>
+          <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
           <input 
             type="text" 
             placeholder="ค้นหารายการ..." 
-            style={{ width: '100%', background: '#1C1F26', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '10px 10px 10px 40px', color: '#fff', outline: 'none' }}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px 12px 12px 42px', color: '#fff', outline: 'none', fontSize: '0.85rem' }}
           />
         </div>
-        <div style={{ background: '#1C1F26', padding: '10px', borderRadius: '50%' }}>
-          <Bell size={20} color="#fff" />
-        </div>
+
+        <button 
+          onClick={() => navigate('/my-p2p-orders')}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '12px', color: '#3B82F6', cursor: 'pointer' }}
+        >
+          <FileText size={20} />
+        </button>
+
+        <button style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', cursor: 'pointer' }}>
+          <Bell size={20} />
+        </button>
       </div>
 
       {/* 🌟 Promo Banner */}
-      <div className="market-promo-card">
-        <div>
-          <h3 style={{ margin: '0 0 5px 0', fontSize: '1.2rem', color: '#fff' }}>รับรายได้จาก P2P</h3>
-          <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.9)' }}>
+      <div style={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%)', borderRadius: '20px', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', boxShadow: '0 10px 25px rgba(59, 130, 246, 0.3)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)', borderRadius: '50%' }}></div>
+        <div style={{ zIndex: 1 }}>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '1.3rem', color: '#fff', fontWeight: 'bold' }}>รับรายได้จาก P2P</h3>
+          <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.85)', lineHeight: '1.4' }}>
             รับค่าธรรมเนียมสูงสุดถึง 20% <br/>เมื่อช่วยผู้ใช้ท่านอื่นทำรายการ
           </p>
         </div>
-        <ShieldCheck size={50} color="rgba(255,255,255,0.8)" />
+        <ShieldCheck size={55} color="rgba(255,255,255,0.9)" style={{ zIndex: 1 }} />
       </div>
 
-      {/* 🌟 Categories */}
-      <div className="market-categories">
-        <div className={`category-btn ${activeCategory === 'DEPOSIT' ? 'active' : ''}`} onClick={() => setActiveCategory('DEPOSIT')}>
-          <Download size={24} />
-          <span style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>รับฝากเงิน</span>
-        </div>
-        <div className={`category-btn ${activeCategory === 'WITHDRAWAL' ? 'active' : ''}`} onClick={() => setActiveCategory('WITHDRAWAL')}>
-          <Upload size={24} />
-          <span style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>รับโอน (ถอน)</span>
-        </div>
+      {/* 🌟 Categories Toggle */}
+      <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', borderRadius: '14px', padding: '5px', marginBottom: '25px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <button 
+          onClick={() => setActiveCategory('DEPOSIT')}
+          style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '10px', background: activeCategory === 'DEPOSIT' ? '#1C1F26' : 'transparent', color: activeCategory === 'DEPOSIT' ? '#3B82F6' : '#94A3B8', border: 'none', fontWeight: activeCategory === 'DEPOSIT' ? 'bold' : 'normal', cursor: 'pointer', transition: 'all 0.3s' }}
+        >
+          <Download size={18} /> รับฝากเงิน
+        </button>
+        <button 
+          onClick={() => setActiveCategory('WITHDRAWAL')}
+          style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '10px', background: activeCategory === 'WITHDRAWAL' ? '#1C1F26' : 'transparent', color: activeCategory === 'WITHDRAWAL' ? '#EF4444' : '#94A3B8', border: 'none', fontWeight: activeCategory === 'WITHDRAWAL' ? 'bold' : 'normal', cursor: 'pointer', transition: 'all 0.3s' }}
+        >
+          <Upload size={18} /> รับโอน (ถอน)
+        </button>
       </div>
-
+      
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-        <h3 style={{ margin: 0, fontSize: '1rem', color: '#E2E8F0' }}>รายการรอดำเนินการ</h3>
+        <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#E2E8F0' }}>รายการรอดำเนินการ</h3>
       </div>
 
       {/* 🌟 Task List */}
-      <div className="task-grid">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#64748B', gridColumn: '1 / -1' }}>กำลังโหลด...</div>
-        ) : tasks.filter(t => t.OrderType === activeCategory).length > 0 ? (
-          // หลังแก้ (เพิ่ม t.Username !== myUsername):
-              tasks.filter(t => t.OrderType === activeCategory && t.Username !== myUsername).map(task => (
-            <div key={task.Id} className="task-card">
+          <div style={{ textAlign: 'center', padding: '40px', color: '#64748B' }}>กำลังโหลด...</div>
+        ) : tasks.filter(t => t.OrderType === activeCategory && t.Username !== myUsername).length > 0 ? (
+            tasks.filter(t => t.OrderType === activeCategory && t.Username !== myUsername).map(task => (
+            <div key={task.Id} style={{ background: 'linear-gradient(180deg, #1A1F2B 0%, #12161F 100%)', borderRadius: '16px', padding: '18px', border: '1px solid rgba(59, 130, 246, 0.15)', position: 'relative', overflow: 'hidden' }}>
               
-              <div className="task-card-header">
+              <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 70%)', borderRadius: '50%' }}></div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '15px' }}>
                 <div>
-                  <p style={{ margin: '0 0 2px 0', fontSize: '0.7rem', color: '#94A3B8' }}>คำขอฝากเงิน (จำนวนเงินที่ต้องการ)</p>
-                  <div className="task-amount">{currencySymbol}{new Intl.NumberFormat('th-TH').format(task.Amount)}</div>
+                  <p style={{ margin: '0 0 4px 0', fontSize: '0.75rem', color: '#94A3B8' }}>ยอดที่ต้องการ</p>
+                  <h3 style={{ margin: 0, fontSize: '1.3rem', color: '#fff' }}>{currencySymbol}{new Intl.NumberFormat('th-TH').format(task.Amount)}</h3>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <p style={{ margin: '0 0 2px 0', fontSize: '0.7rem', color: '#94A3B8' }}>ค่าธรรมเนียมของคุณ</p>
-                  <div className="task-fee">+{currencySymbol}{new Intl.NumberFormat('th-TH').format(task.FeeAmount)}</div>
+                  <p style={{ margin: '0 0 4px 0', fontSize: '0.75rem', color: '#94A3B8' }}>ค่าธรรมเนียมที่จะได้รับ</p>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#10B981' }}>+{currencySymbol}{new Intl.NumberFormat('th-TH').format(task.FeeAmount)}</h3>
                 </div>
               </div>
 
               {/* Soidao ID Card */}
-              <div className="soidao-id-card">
-                <img src={task.ProfileImageUrl || 'https://via.placeholder.com/40'} alt="user" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '12px' }}>
+                <img src={task.ProfileImageUrl || 'https://via.placeholder.com/40'} alt="user" style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)', objectFit: 'cover' }} />
                 <div style={{ flex: 1 }}>
-                  <p style={{ margin: '0 0 2px 0', fontSize: '0.85rem', fontWeight: 'bold', color: '#fff' }}>
+                  <p style={{ margin: '0 0 2px 0', fontSize: '0.9rem', fontWeight: 'bold', color: '#E2E8F0' }}>
                     {maskUsername(task.Username)}
                   </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '0.7rem', color: '#94A3B8' }}>ผู้ยืนยันตัวตนแล้ว</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <CheckCircle size={12} color="#10B981" />
+                    <span style={{ fontSize: '0.7rem', color: '#10B981' }}>ยืนยันตัวตนแล้ว</span>
                   </div>
                 </div>
-                <CheckCircle size={16} color="#10B981" />
               </div>
 
-              <button className="btn-accept-task" onClick={() => handleAcceptTask(task.Id, task.Amount)}>
-                รับงานนี้ (หักเงินค้ำประกัน)
+              <button 
+                onClick={() => handleAcceptTask(task.Id, task.Amount)}
+                style={{ width: '100%', padding: '14px', background: 'rgba(59, 130, 246, 0.1)', color: '#3B82F6', border: '1px solid #3B82F6', borderRadius: '12px', fontWeight: 'bold', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', transition: 'all 0.3s' }}
+                onMouseOver={(e) => { e.currentTarget.style.background = '#3B82F6'; e.currentTarget.style.color = '#fff'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'; e.currentTarget.style.color = '#3B82F6'; }}
+              >
+                รับงานนี้ <ChevronRight size={18} />
               </button>
             </div>
           ))
         ) : (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#64748B', gridColumn: '1 / -1' }}>
-            <ShieldCheck size={32} style={{ opacity: 0.3, margin: '0 auto 10px auto' }} />
-            <p style={{ margin: 0, fontSize: '0.8rem' }}>ยังไม่มีคำขอในขณะนี้</p>
+          <div style={{ textAlign: 'center', padding: '50px 20px', color: '#64748B', background: '#12161F', borderRadius: '16px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+            <ShieldCheck size={40} style={{ opacity: 0.2, margin: '0 auto 15px auto' }} />
+            <p style={{ margin: 0, fontSize: '0.9rem' }}>ยังไม่มีคำขอในขณะนี้</p>
           </div>
         )}
       </div>
