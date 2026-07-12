@@ -284,13 +284,14 @@ export default function P2POrderDetail() {
                   หลักฐานจากผู้ฝากเงิน ({order.Username})
                 </h4>
                 
-                <div style={{ background: '#1E293B', padding: '10px', borderRadius: '12px', textAlign: 'center', marginBottom: '20px', border: '1px dashed rgba(255,255,255,0.2)' }}>
-                  {order.SlipImageUrl ? (
-                    <img src={order.SlipImageUrl} alt="Slip" style={{ maxWidth: '100%', borderRadius: '8px' }} />
-                  ) : (
-                    <p style={{ color: '#94A3B8', fontSize: '0.8rem' }}>ผู้ใช้อัปโหลดรูปภาพ (รอลิงก์รูป)</p>
-                  )}
-                </div>
+               <div style={{ background: '#1E293B', padding: '10px', borderRadius: '12px', textAlign: 'center', marginBottom: '20px', border: '1px dashed rgba(255,255,255,0.2)' }}>
+  {/* 🌟 เปลี่ยนมาใช้ order.SlipUrl ให้ตรงกับ Database ของคุณเป๊ะๆ */}
+  {order.SlipUrl ? (
+    <img src={order.SlipUrl} alt="Slip" style={{ maxWidth: '100%', borderRadius: '8px' }} />
+  ) : (
+    <p style={{ color: '#94A3B8', fontSize: '0.8rem' }}>ผู้ใช้อัปโหลดรูปภาพ (รอลิงก์รูป)</p>
+  )}
+</div>
 
                 <div style={{ background: 'rgba(16, 185, 129, 0.1)', borderLeft: '4px solid #10B981', padding: '12px', borderRadius: '4px', marginBottom: '20px' }}>
                   <p style={{ margin: 0, fontSize: '0.8rem', color: '#10B981' }}>
