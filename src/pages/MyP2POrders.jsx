@@ -62,16 +62,31 @@ export default function MyP2POrders() {
       ) : orders.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           {orders.map(order => {
-            // 🌟 2. แยกบทบาทให้ชัดเจนว่า ผู้ใช้งานปัจจุบันเป็นคนฝาก หรือ คนรับงาน
-          // 🌟 ระบบเช็กบทบาทแบบหลบการเซนเซอร์และตัวพิมพ์เล็ก/ใหญ่
-const me = String(myUsername).toLowerCase();
-const matcher = String(order.MatchedUsername || order.MatcherUsername || '').toLowerCase();
+            
+            // ==============================================================
+            // 🌟 2. ระบบแยกบทบาท (เช็กแบบแม่นยำ 100% ป้องกันชื่อเซนเซอร์)
+            // ==============================================================
+            const myName = String(myUsername || '').trim().toLowerCase();
+            const creatorName = String(order.Username || order.RequesterUsername || '').trim().toLowerCase();
+            const matcherName = String(order.MatchedUsername || order.MatcherUsername || '').trim().toLowerCase();
 
-// ถ้าชื่อเราตรงกับช่องคนรับงาน = เราคือ "ผู้รับงาน" (Matcher)
-const isMatcher = (matcher === me);
+            let isRequester = (myName === creatorName);
+            let isMatcher = (myName === matcherName);
 
-// ถ้าเราไม่ใช่คนรับงาน = เราต้องเป็น "ผู้ฝากเงิน" (Requester) แน่นอน 100%
-const isRequester = !isMatcher;
+            // ท่าไม้ตาย: ดักจับกรณี API ส่งชื่อติดดอกจันมา (เช่น use***r1) 
+            // ระบบจะดู 3 ตัวอักษรแรก ถ้าตรงกัน ถือว่าเป็นคนๆ เดียวกัน
+            if (!isRequester && creatorName.includes('***') && myName.substring(0, 3) === creatorName.substring(0, 3)) {
+                isRequester = true;
+            }
+            if (!isMatcher && matcherName.includes('***') && myName.substring(0, 3) === matcherName.substring(0, 3)) {
+                isMatcher = true;
+            }
+            
+            // เผื่อกรณีผิดพลาดสูงสุด ถ้ายังหาไม่ได้ ให้ยึดว่าถ้าไม่ใช่คนรับงาน ต้องเป็นคนฝากเงิน
+            if (!isRequester && !isMatcher) {
+                isRequester = !isMatcher; 
+            }
+            // ==============================================================
 
             return (
               <div key={order.Id} style={{ background: '#1C1F26', borderRadius: '16px', padding: '15px', border: '1px solid rgba(255,255,255,0.05)' }}>

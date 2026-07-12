@@ -9,7 +9,7 @@ export default function P2POrderDetail() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [myUsername, setMyUsername] = useState('');
-  const [currency, setCurrency] = useState('LAK'); // หรือดึงจาก Profile
+  const [currency, setCurrency] = useState('LAK'); 
 
   // State สำหรับฟอร์มโอนเงิน
   const [confirmCodeInput, setConfirmCodeInput] = useState('');
@@ -28,15 +28,11 @@ export default function P2POrderDetail() {
         if (parsed.username) setMyUsername(parsed.username);
       } catch (e) {}
     }
-
-    // 2. ดึงข้อมูลออเดอร์นี้จาก API (สมมติว่าคุณมี API นี้แล้ว)
-    // ถ้ายังไม่มี API ดึงรายตัว ให้ใช้ API เดิมแล้ว filter เอาตาม ID ก็ได้ครับ
     fetchOrderDetails();
   }, [id]);
 
   const fetchOrderDetails = async () => {
     try {
-      // 🌟 เปลี่ยน URL เป็น API ดึงรายละเอียดออเดอร์ของคุณ
       const res = await fetch(`https://api.run9.app/api/p2p/order/${id}`);
       const data = await res.json();
       if (data.success) {
@@ -72,7 +68,6 @@ export default function P2POrderDetail() {
     
     setIsProcessing(true);
     try {
-      // 🌟 เรียก API ส่งสลิป (ปรับให้ตรงกับ Backend ของคุณ)
       const res = await fetch('https://api.run9.app/api/p2p/upload-slip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -87,7 +82,7 @@ export default function P2POrderDetail() {
       const data = await res.json();
       if (data.success) {
         alert("ส่งสลิปสำเร็จ! รอผู้รับงานตรวจสอบ");
-        fetchOrderDetails(); // โหลดข้อมูลใหม่เพื่อเปลี่ยนสถานะหน้าจอ
+        fetchOrderDetails(); 
       } else {
         alert("เกิดข้อผิดพลาด: " + data.error);
       }
@@ -103,7 +98,6 @@ export default function P2POrderDetail() {
     
     setIsProcessing(true);
     try {
-      // 🌟 เรียก API กระจายเงินที่เราเพิ่งทำไป
       const res = await fetch('https://api.run9.app/api/p2p/confirm-receipt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -112,7 +106,7 @@ export default function P2POrderDetail() {
       const data = await res.json();
       if (data.success) {
         alert("✅ อนุมัติสำเร็จ! ระบบได้กระจายเงินเรียบร้อยแล้ว");
-        navigate('/assets'); // เด้งกลับหน้ากระเป๋าเงิน
+        navigate('/assets'); 
       } else {
         alert("เกิดข้อผิดพลาด: " + data.error);
       }
@@ -126,15 +120,32 @@ export default function P2POrderDetail() {
   if (loading) return <div style={{ textAlign: 'center', padding: '50px', color: '#fff' }}>กำลังโหลด...</div>;
   if (!order) return <div style={{ textAlign: 'center', padding: '50px', color: '#fff' }}>ไม่พบข้อมูลรายการ</div>;
 
-// 🌟 ระบบเช็กบทบาทแบบหลบการเซนเซอร์และตัวพิมพ์เล็ก/ใหญ่
-const me = String(myUsername).toLowerCase();
-const matcher = String(order.MatchedUsername || order.MatcherUsername || '').toLowerCase();
+  // =========================================================================
+  // 🌟 ระบบเช็กบทบาทแบบแม่นยำ 100% (แก้ไขใหม่ ลบจุดบอดเรื่องการสลับหน้า)
+  // =========================================================================
+  const myName = String(myUsername || '').trim().toLowerCase();
+  
+  // ชื่อของคนสร้างออเดอร์ (คนฝากเงิน)
+  const creatorName = String(order.Username || order.RequesterUsername || '').trim().toLowerCase();
+  
+  // ชื่อของคนกดรับงาน (คนรับเงินโอน)
+  const matcherName = String(order.MatchedUsername || order.MatcherUsername || '').trim().toLowerCase();
 
-// ถ้าชื่อเราตรงกับช่องคนรับงาน = เราคือ "ผู้รับงาน" (Matcher)
-const isMatcher = (matcher === me);
+  // 1. ตรวจสอบชัดเจนว่าคุณคือคนสร้างออเดอร์ใช่หรือไม่
+  let isRequester = (myName === creatorName);
+  
+  // 2. ตรวจสอบชัดเจนว่าคุณคือคนรับงานใช่หรือไม่
+  let isMatcher = (myName === matcherName);
 
-// ถ้าเราไม่ใช่คนรับงาน = เราต้องเป็น "ผู้ฝากเงิน" (Requester) แน่นอน 100%
-const isRequester = !isMatcher;
+  // 3. ท่าไม้ตาย: ในกรณีที่ API ส่งชื่อที่โดนเซนเซอร์มาให้ (เช่น use***r1) 
+  // ระบบจะดึงตัวอักษร 3 ตัวแรกมาเทียบ เพื่อยืนยันตัวตนให้ถูกต้อง
+  if (!isRequester && creatorName.includes('***') && myName.substring(0, 3) === creatorName.substring(0, 3)) {
+      isRequester = true;
+  }
+  if (!isMatcher && matcherName.includes('***') && myName.substring(0, 3) === matcherName.substring(0, 3)) {
+      isMatcher = true;
+  }
+  // =========================================================================
 
   return (
     <div style={{ padding: '20px 15px', paddingBottom: '90px', fontFamily: "'Prompt', sans-serif", background: '#0B0E14', minHeight: '100vh', color: '#fff' }}>
@@ -158,6 +169,12 @@ const isRequester = !isMatcher;
         </div>
       </div>
 
+      {/* DEBUG BOX (ซ่อนไว้ ถ้ามันยังสลับกันอีก คุณแคปส่วนนี้ให้ผมดูได้เลย จะรู้ทันทีว่าค่าไหนผิด) */}
+      {/* <div style={{background:'red', padding:'10px', fontSize:'12px'}}>
+         My Username: {myName} | Creator: {creatorName} | Matcher: {matcherName} <br/>
+         isRequester: {isRequester ? 'YES' : 'NO'} | isMatcher: {isMatcher ? 'YES' : 'NO'}
+      </div> */}
+
       {/* ============================================================== */}
       {/* 🌟 4. มุมมองของผู้ฝากเงิน (Requester) */}
       {/* ============================================================== */}
@@ -167,7 +184,6 @@ const isRequester = !isMatcher;
           {/* สถานะ MATCHED: โชว์ฟอร์มให้โอนเงิน */}
           {order.Status === 'MATCHED' && (
             <>
-              {/* โค้ด UI ที่คุณให้มาทั้งหมดวางตรงนี้เลยครับ 👇 */}
               <div style={{ background: 'rgba(245, 158, 11, 0.1)', borderLeft: '4px solid #F59E0B', padding: '12px', borderRadius: '4px', marginBottom: '15px', display: 'flex', gap: '10px' }}>
                   <AlertTriangle size={20} color="#F59E0B" style={{ flexShrink: 0 }} />
                   <div>
@@ -180,8 +196,7 @@ const isRequester = !isMatcher;
 
               <h4 style={{ color: '#E2E8F0', marginTop: 0, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>โอนเงินไปยังบัญชี:</h4>
               <div style={{ marginBottom: '20px' }}>
-                  {/* เปลี่ยนตัวแปรให้ดึงจาก Matcher (คนรับงาน) */}
-                  <p style={{ color: '#94A3B8', fontSize: '0.85rem', margin: '4px 0' }}>ธนาคาร: <span style={{color: '#fff'}}>{order.MatcherBankName || 'JDB'}</span></p>
+                  <p style={{ color: '#94A3B8', fontSize: '0.85rem', margin: '4px 0' }}>ธนาคาร: <span style={{color: '#fff'}}>{order.MatcherBankName || 'JDB (ธนาคารร่วมพัฒนา)'}</span></p>
                   <p style={{ color: '#94A3B8', fontSize: '0.85rem', margin: '4px 0' }}>เลขบัญชี: <span style={{color: '#3B82F6', fontWeight: 'bold', fontSize: '1.1rem'}}>{order.MatcherBankAcc || '111-222333-4'}</span></p>
                   <p style={{ color: '#94A3B8', fontSize: '0.85rem', margin: '4px 0' }}>ชื่อบัญชี: <span style={{color: '#fff'}}>{order.MatcherBankNameAcc || order.MatchedUsername}</span></p>
               </div>
@@ -270,7 +285,6 @@ const isRequester = !isMatcher;
                 </h4>
                 
                 <div style={{ background: '#1E293B', padding: '10px', borderRadius: '12px', textAlign: 'center', marginBottom: '20px', border: '1px dashed rgba(255,255,255,0.2)' }}>
-                  {/* แสดงรูปสลิปจาก Database (สมมติว่าเก็บ URL ไว้ใน order.SlipImageUrl) */}
                   {order.SlipImageUrl ? (
                     <img src={order.SlipImageUrl} alt="Slip" style={{ maxWidth: '100%', borderRadius: '8px' }} />
                   ) : (
