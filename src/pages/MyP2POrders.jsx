@@ -73,10 +73,10 @@ export default function MyP2POrders() {
                 </div>
               </div>
 
-              {/* 🌟 ถ้าสถานะเป็น MATCHED ให้โชว์ปุ่มไปโอนเงิน */}
+              {/* 🌟 🌟 🌟 แก้ไขตรงนี้ ใช้ Backtick ` เพื่อส่ง order.Id */}
               {order.Status === 'MATCHED' && (
                 <button 
-                  onClick={() => navigate(`/p2p-order/${order.Id}`)}
+                  onClick={() => navigate(`/p2p-order/${order.Id}`)} 
                   style={{ width: '100%', background: 'linear-gradient(90deg, #10B981 0%, #059669 100%)', color: '#fff', border: 'none', padding: '12px', borderRadius: '10px', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
                 >
                   <span>ดูบัญชีและโอนเงิน</span>
@@ -84,7 +84,7 @@ export default function MyP2POrders() {
                 </button>
               )}
               
-              {/* 🌟 ถ้าอัปโหลดสลิปแล้ว ให้โชว์ปุ่มไปดูสถานะ */}
+              {/* 🌟 🌟 🌟 แก้ไขตรงนี้ ใช้ Backtick ` เพื่อส่ง order.Id */}
               {order.Status === 'SLIP_UPLOADED' && (
                 <button 
                   onClick={() => navigate(`/p2p-order/${order.Id}`)}

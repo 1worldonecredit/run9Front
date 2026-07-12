@@ -77,7 +77,7 @@ export default function TopUpMoney() {
       
       if (data.success) {
         alert(`✅ สร้างคำขอเติมเงิน P2P สำเร็จ!\nระบบได้ส่งคำขอไปให้ผู้ให้บริการแล้ว`);
-        navigate('/p2p-order/:id'); // 🌟 เปลี่ยนให้เด้งไปหน้า "รายการของฉัน" แทนหน้า Market
+        navigate('/my-p2p'); // 🌟 เปลี่ยนให้เด้งไปหน้า "รายการของฉัน" แทนหน้า Market
       } else {
         alert(`❌ เกิดข้อผิดพลาด: ${data.message}`);
       }

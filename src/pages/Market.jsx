@@ -54,7 +54,7 @@ export default function Market() {
       if (data.success) {
         alert(`✅ ${data.message}\nรหัสยืนยันของคุณคือ: ${data.confirmationCode}`);
         fetchTasks(); 
-        navigate('/my-p2p-orders'); // 🌟 รับงานเสร็จ พาไปหน้ารายการของฉันทันที
+        navigate('/my-p2p-orders'); 
       } else {
         alert(`❌ ${data.message}`);
         fetchTasks(); 
@@ -67,8 +67,8 @@ export default function Market() {
   return (
     <div style={{ padding: '20px 15px', paddingBottom: '90px', fontFamily: "'Prompt', sans-serif", background: '#0B0E14', minHeight: '100vh', color: '#fff' }}>
       
-      {/* 🌟 Header & Actions */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', gap: '10px' }}>
+      {/* 🌟 Header: คืนค่าให้ Search กับ Bell อยู่แบบเดิม สวยๆ คลีนๆ */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', gap: '15px' }}>
         <div style={{ position: 'relative', flex: 1 }}>
           <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
           <input 
@@ -77,13 +77,6 @@ export default function Market() {
             style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px 12px 12px 42px', color: '#fff', outline: 'none', fontSize: '0.85rem' }}
           />
         </div>
-
-        <button 
-          onClick={() => navigate('/my-p2p-orders')}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '12px', color: '#3B82F6', cursor: 'pointer' }}
-        >
-          <FileText size={20} />
-        </button>
 
         <button style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', cursor: 'pointer' }}>
           <Bell size={20} />
@@ -118,8 +111,21 @@ export default function Market() {
         </button>
       </div>
       
+      {/* 🌟 จุดที่ย้ายปุ่มมาใหม่! วางขนานกับหัวข้อ "รายการรอดำเนินการ" */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
         <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#E2E8F0' }}>รายการรอดำเนินการ</h3>
+        
+        <button 
+          onClick={() => navigate('/my-p2p-orders')}
+          style={{ 
+            display: 'flex', alignItems: 'center', gap: '6px', 
+            padding: '8px 12px', background: 'rgba(59, 130, 246, 0.1)', 
+            color: '#3B82F6', border: '1px solid rgba(59, 130, 246, 0.3)', 
+            borderRadius: '8px', fontWeight: 'bold', fontSize: '0.8rem', cursor: 'pointer' 
+          }}
+        >
+          <FileText size={16} /> ประวัติของฉัน
+        </button>
       </div>
 
       {/* 🌟 Task List */}
@@ -145,7 +151,9 @@ export default function Market() {
 
               {/* Soidao ID Card */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '12px' }}>
-                <img src={task.ProfileImageUrl || 'https://via.placeholder.com/40'} alt="user" style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)', objectFit: 'cover' }} />
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                  {task.ProfileImageUrl && <img src={task.ProfileImageUrl} alt="user" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                </div>
                 <div style={{ flex: 1 }}>
                   <p style={{ margin: '0 0 2px 0', fontSize: '0.9rem', fontWeight: 'bold', color: '#E2E8F0' }}>
                     {maskUsername(task.Username)}

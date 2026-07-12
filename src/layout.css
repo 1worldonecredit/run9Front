@@ -873,3 +873,32 @@
     margin-bottom: 15px;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+
+/* =========================================
+   P2P Form Layout (แก้ปัญหาช่องกรอกข้อมูลล้นขอบ)
+   ========================================= */
+
+/* คุมกล่องฟอร์มแบบแบ่ง 2 คอลัมน์ (วันที่ / เวลา) */
+.p2p-split-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* คุมช่อง Input ให้ไม่ล้นขอบ (บังคับนับ Padding รวมใน Width) */
+.p2p-input-field {
+    box-sizing: border-box !important;
+    /* หัวใจสำคัญที่ทำให้ไม่ล้นขอบ */
+    width: 100%;
+    max-width: 100%;
+}
+
+/* สำหรับมือถือจอเล็กมาก (เช่น iPhone SE) ให้เปลี่ยนจากซ้าย-ขวา เป็น บน-ล่าง แทนเพื่อไม่ให้อึดอัด */
+@media (max-width: 380px) {
+    .p2p-split-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+}
