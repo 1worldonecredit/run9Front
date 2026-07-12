@@ -20,10 +20,21 @@ export default function Market() {
     fetchTasks();
   }, []);
 
+  // 🌟 ฟังก์ชันดึงข้อมูลกระดาน Market (แก้ให้ส่ง ประเทศ ไปด้วย)
   const fetchTasks = async () => {
     try {
-      const response = await fetch('https://api.run9.app/api/p2p/orders/pending');
+      // 1. ดึงข้อมูลประเทศของคนที่ล็อกอินอยู่
+      const savedProfileStr = localStorage.getItem('userProfile');
+      let myCountry = '';
+      if (savedProfileStr) {
+        const parsed = JSON.parse(savedProfileStr);
+        myCountry = parsed.country || parsed.Country || ''; // เช็กให้ตรงกับชื่อ key ที่คุณบันทึกไว้
+      }
+
+      // 2. แนบ country ต่อท้าย URL ไปให้ API ฝั่ง Backend กรองข้อมูล
+      const response = await fetch(`https://api.run9.app/api/p2p/orders/pending?country=${myCountry}`);
       const data = await response.json();
+      
       if (data.success) setTasks(data.orders);
     } catch (error) {
       console.error("Error fetching tasks:", error);
