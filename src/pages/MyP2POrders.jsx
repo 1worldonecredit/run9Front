@@ -63,8 +63,15 @@ export default function MyP2POrders() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           {orders.map(order => {
             // 🌟 2. แยกบทบาทให้ชัดเจนว่า ผู้ใช้งานปัจจุบันเป็นคนฝาก หรือ คนรับงาน
-            const isRequester = myUsername === order.Username;
-            const isMatcher = myUsername === order.MatchedUsername;
+          // 🌟 ระบบเช็กบทบาทแบบหลบการเซนเซอร์และตัวพิมพ์เล็ก/ใหญ่
+const me = String(myUsername).toLowerCase();
+const matcher = String(order.MatchedUsername || order.MatcherUsername || '').toLowerCase();
+
+// ถ้าชื่อเราตรงกับช่องคนรับงาน = เราคือ "ผู้รับงาน" (Matcher)
+const isMatcher = (matcher === me);
+
+// ถ้าเราไม่ใช่คนรับงาน = เราต้องเป็น "ผู้ฝากเงิน" (Requester) แน่นอน 100%
+const isRequester = !isMatcher;
 
             return (
               <div key={order.Id} style={{ background: '#1C1F26', borderRadius: '16px', padding: '15px', border: '1px solid rgba(255,255,255,0.05)' }}>

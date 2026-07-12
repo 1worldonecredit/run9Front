@@ -126,9 +126,15 @@ export default function P2POrderDetail() {
   if (loading) return <div style={{ textAlign: 'center', padding: '50px', color: '#fff' }}>กำลังโหลด...</div>;
   if (!order) return <div style={{ textAlign: 'center', padding: '50px', color: '#fff' }}>ไม่พบข้อมูลรายการ</div>;
 
-  // 🌟 3. ตัวแปรแยกบทบาท (สำคัญมาก)
-  const isRequester = myUsername === order.Username;
-  const isMatcher = myUsername === order.MatchedUsername;
+// 🌟 ระบบเช็กบทบาทแบบหลบการเซนเซอร์และตัวพิมพ์เล็ก/ใหญ่
+const me = String(myUsername).toLowerCase();
+const matcher = String(order.MatchedUsername || order.MatcherUsername || '').toLowerCase();
+
+// ถ้าชื่อเราตรงกับช่องคนรับงาน = เราคือ "ผู้รับงาน" (Matcher)
+const isMatcher = (matcher === me);
+
+// ถ้าเราไม่ใช่คนรับงาน = เราต้องเป็น "ผู้ฝากเงิน" (Requester) แน่นอน 100%
+const isRequester = !isMatcher;
 
   return (
     <div style={{ padding: '20px 15px', paddingBottom: '90px', fontFamily: "'Prompt', sans-serif", background: '#0B0E14', minHeight: '100vh', color: '#fff' }}>
