@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-
 export default function Register({ onSwitchToLogin }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams(); 
@@ -108,7 +107,8 @@ export default function Register({ onSwitchToLogin }) {
       const response = await fetch('https://api.run9.app/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ referredBy: referral, country, username, password })
+        // 🌟 แก้ไข: เปลี่ยนจาก referredBy เป็น referralUsername ให้ตรงกับที่ Backend รอรับ
+        body: JSON.stringify({ referralUsername: referral, country, username, password })
       });
       const data = await response.json();
       
