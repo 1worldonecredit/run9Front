@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Download, Upload, Wallet, Star, Heart } from 'lucide-react';
+import { 
+  Search, MapPin, Download, Upload, Wallet, Star, Heart, 
+  CheckCircle2, Package, ShoppingBag, Store, Info, SlidersHorizontal, 
+  Globe, TrendingUp, ShieldCheck
+} from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -16,129 +20,226 @@ export default function Dashboard() {
     }
   }, []);
 
-  // 📦 ข้อมูลจำลองสำหรับ "ร้านค้ายอดนิยม" (เลื่อนซ้าย-ขวา)
+  // 📦 ข้อมูลจำลองสำหรับ "ร้านค้ายอดนิยม"
   const popularShops = [
-    { id: 1, name: 'The Burger House', type: 'American, Fast Food', rating: 4.8, time: '30-40 min', img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60' },
-    { id: 2, name: 'Pizza Mania', type: 'Italian, Pizza', rating: 4.6, time: '25-35 min', img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60' },
-    { id: 3, name: 'Sushi Master', type: 'Japanese, Sushi', rating: 4.9, time: '40-50 min', img: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60' },
+    { 
+      id: 1, 
+      name: 'Gadget Maste', 
+      type: 'อุปกรณ์ไอที, อิเล็กทรอนิกส์', 
+      rating: 4.8, 
+      verified: true,
+      productCount: 1250,
+      location: 'กรุงเทพมหานคร',
+      coverImg: 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+      profileImg: 'https://images.unsplash.com/photo-1614680376593-902f74cf0d41?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'
+    },
+    { 
+      id: 2, 
+      name: 'Sneaker Head', 
+      type: 'รองเท้า, แฟชั่นผู้ชาย', 
+      rating: 4.9, 
+      verified: true,
+      productCount: 340,
+      location: 'เชียงใหม่',
+      coverImg: 'https://images.unsplash.com/photo-1556906781-9a412961c28c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+      profileImg: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'
+    },
+    { 
+      id: 3, 
+      name: 'Organic Life', 
+      type: 'อาหารเสริม, สุขภาพ', 
+      rating: 4.6, 
+      verified: false,
+      productCount: 85,
+      location: 'ขอนแก่น',
+      coverImg: 'https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+      profileImg: 'https://images.unsplash.com/photo-1505252585461-04db1eb84625?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'
+    },
   ];
 
-  // 📦 ข้อมูลจำลองสำหรับ "สินค้าแนะนำ" (Grid 2 คอลัมน์)
+  // 📦 ข้อมูลจำลองสำหรับ "สินค้าแนะนำ"
   const recommendedProducts = [
-    { id: 1, name: 'Classic Royale', desc: 'Burger with cheese', price: '159 ฿', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=60' },
-    { id: 2, name: 'Spicy Inferno', desc: 'Loaded with jalapeños', price: '189 ฿', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=60' },
-    { id: 3, name: 'Crispy Fries', desc: 'Golden crunch fries', price: '69 ฿', img: 'https://images.unsplash.com/photo-1576107232684-1279f390859f?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=60' },
-    { id: 4, name: 'Chicken Paneer', desc: 'Smoky grilled chicken', price: '120 ฿', img: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=60' },
+    { 
+      id: 1, 
+      name: 'Mechanical Keyboard Pro K8', 
+      shopName: 'Gadget Master', 
+      origin: 'China',
+      sold: '1.2k',
+      stock: 45,
+      price: '2,590 ฿', 
+      img: 'https://images.unsplash.com/photo-1595225476474-87563907a212?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80' 
+    },
+    { 
+      id: 2, 
+      name: 'Nike Air Force 1 Premium', 
+      shopName: 'Sneaker Head', 
+      origin: 'Vietnam',
+      sold: '850',
+      stock: 12,
+      price: '3,500 ฿', 
+      img: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80' 
+    },
+    { 
+      id: 3, 
+      name: 'Whey Protein Isolate 5lbs', 
+      shopName: 'Organic Life', 
+      origin: 'USA',
+      sold: '3k',
+      stock: 0,
+      price: '1,890 ฿', 
+      img: 'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80' 
+    },
+    { 
+      id: 4, 
+      name: 'Sony WH-1000XM5', 
+      shopName: 'Gadget Master', 
+      origin: 'Japan',
+      sold: '420',
+      stock: 5,
+      price: '12,990 ฿', 
+      img: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80' 
+    },
   ];
 
   return (
     <div className="dashboard-container">
       
-      {/* 🌟 ส่วนค้นหาและพิกัด */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-        <div style={{ background: '#1C1F26', padding: '10px', borderRadius: '50%', display: 'flex' }}>
-          <MapPin size={20} color="#FF8A00" />
+      {/* 🌟 1. ส่วนหัว: พิกัด และ แถบค้นหา */}
+      <div className="dash-header-top">
+        <div className="dash-location">
+          <div className="location-icon">
+            <MapPin size={18} color="#FF8A00" />
+          </div>
+          <div>
+            <p className="location-label">ตำแหน่งปัจจุบัน</p>
+            <h4 className="location-text">Indiranagar 1st Stage</h4>
+          </div>
         </div>
-        <div>
-          <p style={{ margin: 0, fontSize: '0.7rem', color: '#94A3B8' }}>ตำแหน่งปัจจุบัน</p>
-          <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#fff' }}>Indiranagar 1st Stage</h4>
-        </div>
-      </div>
 
-      {/* 🌟 Hero Banner */}
-      <div className="dash-hero-banner">
-        <div style={{ zIndex: 1 }}>
-          <h2 style={{ margin: '0 0 5px 0', fontSize: '1.4rem', fontWeight: 'bold' }}>Special Offer<br/>For March</h2>
-          <p style={{ margin: '0 0 15px 0', fontSize: '0.75rem', opacity: 0.9 }}>ลดสูงสุด 50% สำหรับสมาชิก 9 Plus</p>
-          <button style={{ background: '#fff', color: '#FF8A00', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
-            สั่งเลยตอนนี้
+        <div className="dash-search-wrapper">
+          <div className="dash-search-box">
+            <Search size={18} color="#94A3B8" />
+            <input type="text" placeholder="ค้นหาสินค้า, ร้านค้า, หรือแบรนด์..." className="dash-search-input" />
+          </div>
+          <button className="dash-filter-btn">
+            <SlidersHorizontal size={18} color="#fff" />
           </button>
         </div>
-        <img 
-          src="https://images.unsplash.com/photo-1550547660-d9450f859349?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" 
-          alt="Burger" 
-          style={{ position: 'absolute', right: '-30px', top: '10px', width: '160px', height: '160px', objectFit: 'cover', borderRadius: '50%', boxShadow: '-5px 5px 15px rgba(0,0,0,0.3)' }}
-        />
       </div>
 
-      {/* 🌟 Quick Actions (ไอคอนเมนูลัด) */}
+      {/* 🌟 2. Hero Banner */}
+      <div className="dash-hero-banner">
+        <div style={{ zIndex: 1 }}>
+          <h2 className="hero-title">Special Offer<br/>For March</h2>
+          <p className="hero-subtitle">ลดสูงสุด 50% สำหรับสมาชิก 9 Plus</p>
+          <button className="hero-btn">สั่งเลยตอนนี้</button>
+        </div>
+      </div>
+
+      {/* 🌟 3. Quick Actions (เมนูลัด - เล็กลง มีมิติ) */}
       <div className="dash-quick-actions">
         <div className="dash-action-btn" onClick={() => navigate('/topup')}>
-          <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '12px', borderRadius: '12px' }}>
-            <Download size={24} color="#3B82F6" />
+          <div className="action-icon-wrapper topup-glow">
+            <Download size={20} color="#3B82F6" />
           </div>
-          <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#E2E8F0' }}>เติมเงิน</span>
+          <span className="action-text">เติมเงิน</span>
         </div>
         
         <div className="dash-action-btn" onClick={() => navigate('/withdraw')}>
-          <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '12px', borderRadius: '12px' }}>
-            <Upload size={24} color="#EF4444" />
+          <div className="action-icon-wrapper withdraw-glow">
+            <Upload size={20} color="#EF4444" />
           </div>
-          <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#E2E8F0' }}>ถอนเงิน</span>
+          <span className="action-text">ถอนเงิน</span>
         </div>
 
         <div className="dash-action-btn" onClick={() => navigate('/assets')}>
-          <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '12px', borderRadius: '12px' }}>
-            <Wallet size={24} color="#10B981" />
+          <div className="action-icon-wrapper wallet-glow">
+            <Wallet size={20} color="#10B981" />
           </div>
-          <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#E2E8F0' }}>กระเป๋า</span>
+          <span className="action-text">กระเป๋า</span>
         </div>
       </div>
 
-      {/* 🌟 ร้านค้ายอดนิยม (Horizontal Scroll) */}
+      {/* 🌟 4. ร้านค้ายอดนิยม */}
       <div className="dash-section-header">
-        <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff' }}>ร้านค้ายอดนิยม</h3>
-        <span style={{ fontSize: '0.75rem', color: '#FF8A00', cursor: 'pointer', fontWeight: 'bold' }}>ดูทั้งหมด</span>
+        <h3 className="section-title">ร้านค้ายอดนิยม</h3>
+        <span className="see-all-btn">ดูทั้งหมด</span>
       </div>
       
       <div className="shop-horizontal-list">
         {popularShops.map(shop => (
           <div key={shop.id} className="shop-card">
-            <img src={shop.img} alt={shop.name} style={{ width: '100%', height: '120px', objectFit: 'cover' }} />
-            <div style={{ padding: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#fff' }}>{shop.name}</h4>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,138,0,0.1)', padding: '2px 6px', borderRadius: '6px' }}>
-                  <Star size={12} color="#FF8A00" fill="#FF8A00" />
-                  <span style={{ fontSize: '0.7rem', color: '#FF8A00', fontWeight: 'bold' }}>{shop.rating}</span>
+            {/* รูปร้านและรูปโปรไฟล์ */}
+            <div className="shop-image-container">
+              <img src={shop.coverImg} alt="Cover" className="shop-cover" />
+              <div className="shop-profile-wrapper">
+                <img src={shop.profileImg} alt={shop.name} className="shop-profile" />
+                {shop.verified && (
+                  <div className="verified-badge" title="ร้านค้าผ่านการตรวจสอบ">
+                    <ShieldCheck size={14} color="#fff" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ข้อมูลร้าน */}
+            <div className="shop-info">
+              <div className="shop-info-top">
+                <h4 className="shop-name">{shop.name}</h4>
+                <div className="shop-rating">
+                  <Star size={12} color="#FACC15" fill="#FACC15" />
+                  <span>{shop.rating}</span>
                 </div>
               </div>
-              <p style={{ margin: '0 0 8px 0', fontSize: '0.7rem', color: '#94A3B8' }}>{shop.type}</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.7rem', color: '#64748B' }}>
-                <span>⏱ {shop.time}</span>
-                <span>🛵 ค่าส่ง 10฿</span>
+              
+              <p className="shop-type"><Store size={12} color="#94A3B8"/> {shop.type}</p>
+              
+              <div className="shop-stats">
+                <span className="stat-badge bg-blue"><ShoppingBag size={10} /> สินค้า {shop.productCount} รายการ</span>
+                <span className="stat-badge bg-orange"><MapPin size={10} /> {shop.location}</span>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* 🌟 สินค้าแนะนำ (Grid 2 แถว) */}
-      <div className="dash-section-header" style={{ marginTop: '10px' }}>
-        <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff' }}>แนะนำสำหรับคุณ</h3>
-        <span style={{ fontSize: '0.75rem', color: '#FF8A00', cursor: 'pointer', fontWeight: 'bold' }}>ดูทั้งหมด</span>
+      {/* 🌟 5. สินค้าแนะนำ */}
+      <div className="dash-section-header" style={{ marginTop: '25px' }}>
+        <h3 className="section-title">สินค้าแนะนำสำหรับคุณ</h3>
+        <span className="see-all-btn">ดูทั้งหมด</span>
       </div>
 
       <div className="product-grid">
         {recommendedProducts.map(product => (
           <div key={product.id} className="product-card">
-            <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.5)', padding: '6px', borderRadius: '50%', zIndex: 2, cursor: 'pointer' }}>
-              <Heart size={16} color="#fff" />
+            <div className="wishlist-btn">
+              <Heart size={16} color="#94A3B8" />
             </div>
-            <img 
-              src={product.img} 
-              alt={product.name} 
-              style={{ width: '100%', height: '110px', objectFit: 'cover', borderRadius: '10px', marginBottom: '10px' }} 
-            />
-            <h4 style={{ margin: '0 0 4px 0', fontSize: '0.85rem', color: '#fff' }}>{product.name}</h4>
-            <p style={{ margin: '0 0 8px 0', fontSize: '0.65rem', color: '#94A3B8', lineHeight: '1.4' }}>{product.desc}</p>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '10px' }}>
-              <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#FF8A00' }}>{product.price}</span>
+            <img src={product.img} alt={product.name} className="product-img" />
+            
+            <div className="product-content">
+              <div className="product-shop-name"><Store size={10}/> {product.shopName}</div>
+              <h4 className="product-name">{product.name}</h4>
+              
+              <div className="product-meta">
+                <span className="meta-item text-blue"><Globe size={12}/> นำเข้าจาก: {product.origin}</span>
+                <div className="meta-row">
+                  <span className="meta-item text-green"><TrendingUp size={12}/> ขายแล้ว {product.sold}</span>
+                  <span className={`meta-item ${product.stock > 0 ? 'text-orange' : 'text-red'}`}>
+                    <Package size={12}/> {product.stock > 0 ? `เหลือ ${product.stock} ชิ้น` : 'สินค้าหมด'}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="product-bottom">
+                <span className="product-price">{product.price}</span>
+              </div>
+
+              <button className="btn-details">
+                <Info size={16} /> ดูรายละเอียด
+              </button>
             </div>
-            <button className="btn-add-cart" style={{ marginTop: '10px' }}>
-              Add To Cart
-            </button>
           </div>
         ))}
       </div>
