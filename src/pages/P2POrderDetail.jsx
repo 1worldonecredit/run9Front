@@ -121,7 +121,7 @@ export default function P2POrderDetail() {
   if (!order) return <div style={{ textAlign: 'center', padding: '50px', color: '#fff' }}>ไม่พบข้อมูลรายการ</div>;
 
   // =========================================================================
-  // 🌟 ระบบเช็กบทบาทแบบแม่นยำ 100% (แก้ไขใหม่ ลบจุดบอดเรื่องการสลับหน้า)
+  // 🌟 ระบบเช็กบทบาทแบบแม่นยำ 100%
   // =========================================================================
   const myName = String(myUsername || '').trim().toLowerCase();
   
@@ -168,12 +168,6 @@ export default function P2POrderDetail() {
           สถานะ: <strong style={{ color: order.Status === 'COMPLETED' ? '#10B981' : '#FACC15' }}>{order.Status}</strong>
         </div>
       </div>
-
-      {/* DEBUG BOX (ซ่อนไว้ ถ้ามันยังสลับกันอีก คุณแคปส่วนนี้ให้ผมดูได้เลย จะรู้ทันทีว่าค่าไหนผิด) */}
-      {/* <div style={{background:'red', padding:'10px', fontSize:'12px'}}>
-         My Username: {myName} | Creator: {creatorName} | Matcher: {matcherName} <br/>
-         isRequester: {isRequester ? 'YES' : 'NO'} | isMatcher: {isMatcher ? 'YES' : 'NO'}
-      </div> */}
 
       {/* ============================================================== */}
       {/* 🌟 4. มุมมองของผู้ฝากเงิน (Requester) */}
@@ -277,21 +271,30 @@ export default function P2POrderDetail() {
              </div>
           )}
 
-          {/* สถานะ SLIP_UPLOADED: คนรับงานเห็นสลิป และปุ่มอนุมัติ */}
+          {/* 🌟 แก้ไขโค้ดตรงนี้ (เปลี่ยน SLIP_SlipUrl เป็น SLIP_UPLOADED ให้ถูกต้อง) */}
           {order.Status === 'SLIP_UPLOADED' && (
              <div>
                 <h4 style={{ color: '#E2E8F0', marginTop: 0, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px', marginBottom: '15px' }}>
                   หลักฐานจากผู้ฝากเงิน ({order.Username})
                 </h4>
                 
-               <div style={{ background: '#1E293B', padding: '10px', borderRadius: '12px', textAlign: 'center', marginBottom: '20px', border: '1px dashed rgba(255,255,255,0.2)' }}>
-  {/* 🌟 เปลี่ยนมาใช้ order.SlipUrl ให้ตรงกับ Database ของคุณเป๊ะๆ */}
-  {order.SlipUrl ? (
-    <img src={order.SlipUrl} alt="Slip" style={{ maxWidth: '100%', borderRadius: '8px' }} />
-  ) : (
-    <p style={{ color: '#94A3B8', fontSize: '0.8rem' }}>ผู้ใช้อัปโหลดรูปภาพ (รอลิงก์รูป)</p>
-  )}
-</div>
+                <div style={{ background: '#1E293B', padding: '10px', borderRadius: '12px', textAlign: 'center', marginBottom: '20px', border: '1px dashed rgba(255,255,255,0.2)' }}>
+                  {/* 🌟 ดึงข้อมูลจากคอลัมน์ SlipUrl ใน Database มาแสดงเป็นรูปภาพ */}
+                  {order.SlipUrl ? (
+                    <img 
+                      src={order.SlipUrl} 
+                      alt="Slip" 
+                      style={{ 
+                        maxWidth: '100%', 
+                        maxHeight: '400px', // จำกัดความสูงกันรูปล้นจอ
+                        objectFit: 'contain', 
+                        borderRadius: '8px' 
+                      }} 
+                    />
+                  ) : (
+                    <p style={{ color: '#94A3B8', fontSize: '0.8rem' }}>ผู้ใช้อัปโหลดรูปภาพ (รอลิงก์รูป)</p>
+                  )}
+                </div>
 
                 <div style={{ background: 'rgba(16, 185, 129, 0.1)', borderLeft: '4px solid #10B981', padding: '12px', borderRadius: '4px', marginBottom: '20px' }}>
                   <p style={{ margin: 0, fontSize: '0.8rem', color: '#10B981' }}>
