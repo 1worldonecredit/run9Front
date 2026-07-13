@@ -1,29 +1,35 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Landmark, Phone, Mail, Calendar, MapPin, Store, PlusCircle, CheckCircle, ShieldCheck, LogOut, X, Camera, AlertCircle } from 'lucide-react';
+import { User, Landmark, Phone, Mail, Calendar, MapPin, Store, PlusCircle, CheckCircle, ShieldCheck, LogOut, X, Camera, AlertCircle, MessageSquare } from 'lucide-react';
 
 export default function Profile() {
   const [stats, setStats] = useState({ daysLeft: 0, isEligible: false, freeTicketsToday: 0, gameHistory: [] });
-  const [profile, setProfile] = useState({ ProfileImageUrl: null, FirstName: '', LastName: '', PhoneNumber: '', IsPhoneVerified: false });
+  const [profile, setProfile] = useState({ ProfileImageUrl: null, FirstName: '', LastName: '', PhoneNumber: '', IsPhoneVerified: false, Country: '' });
   
   const [activeBank, setActiveBank] = useState(null); 
   const [bankMasterList, setBankMasterList] = useState([]); 
   
-  // ควบคุมการเปิด/ปิด Popup
+  // ควบคุมการเปิด/ปิด Popups
   const [isBankModalOpen, setIsBankModalOpen] = useState(false); 
   const [isNameModalOpen, setIsNameModalOpen] = useState(false); 
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false); // 🌟 State สำหรับเปิดหน้า OTP
   
+  // State สำหรับเพิ่มบัญชีธนาคาร
   const [formBankCode, setFormBankCode] = useState('');
   const [formAccNumber, setFormAccountNumber] = useState('');
+  const [formBankBook, setFormBankBook] = useState(null); 
+
+  // 🌟 State สำหรับจัดการเบอร์โทรและ OTP
+  const [phoneInput, setPhoneInput] = useState('');
+  const [otpStep, setOtpStep] = useState(1); // 1 = กรอกเบอร์, 2 = กรอก OTP
+  const [otpCode, setOtpCode] = useState('');
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  // 🌟 State ใหม่สำหรับจัดการรูปภาพชั่วคราวก่อนบันทึก
+  // State จัดการรูปภาพชั่วคราวก่อนบันทึก
   const fileInputRef = useRef(null);
   const [previewImage, setPreviewImage] = useState(null); 
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-
-  const [formBankBook, setFormBankBook] = useState(null); 
 
   // ดึงชื่อคนที่ล็อกอินอยู่จากระบบ
   const username = localStorage.getItem('username');
@@ -63,9 +69,58 @@ export default function Profile() {
     }
   }, [username]);
 
-  // --- ฟังก์ชันบันทึกข้อมูลส่วนตัว (เรียก API ตัวเดิมที่คุณมี) ---
-  const saveProfileData = async (e, newImage = profile.ProfileImageUrl) => {
-    if(e) e.preventDefault();
+  // ==============================================================
+  // 🌟 ฟังก์ชันจัดการรูปโปรไฟล์ (Preview -> Save/Cancel)
+  // ==============================================================
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result); // แสดงตัวอย่างภาพ ปุ่มบันทึกจะเด้งขึ้นมา
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCancelImage = () => {
+    setPreviewImage(null); // เคลียร์ภาพตัวอย่าง กลับไปใช้ภาพเดิมจาก DB
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleSaveImage = async () => {
+    setIsUploadingImage(true);
+    try {
+      const res = await fetch('https://api.run9.app/api/user/update-profile', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          username: username,
+          imageBase64: previewImage, // ส่งภาพใหม่ไป
+          firstName: profile.FirstName, 
+          lastName: profile.LastName,
+          phone: profile.PhoneNumber
+        })
+      });
+      const data = await res.json();
+      if(res.ok || data.success) {
+        alert("อัปเดตโปรไฟล์สำเร็จ!");
+        setPreviewImage(null);
+        window.location.reload(); // 🌟 บังคับรีโหลดหน้า เพื่อให้ Navbar และ Sidebar ดึงรูปใหม่ไปแสดงทันที
+      } else {
+        alert('❌ เกิดข้อผิดพลาด: ' + (data.error || 'ไม่สามารถบันทึกได้'));
+      }
+    } catch (err) {
+      alert('⚠️ เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    }
+    setIsUploadingImage(false);
+  };
+
+  // ==============================================================
+  // 🌟 ฟังก์ชันบันทึกข้อมูลส่วนตัว (ชื่อ-นามสกุล)
+  // ==============================================================
+  const saveProfileData = async (e) => {
+    e.preventDefault();
     setSaving(true);
     try {
       const res = await fetch('https://api.run9.app/api/user/update-profile', { 
@@ -73,26 +128,17 @@ export default function Profile() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           username: username,
-          imageBase64: newImage,
+          imageBase64: profile.ProfileImageUrl,
           firstName: profile.FirstName, 
           lastName: profile.LastName,
           phone: profile.PhoneNumber
         })
       });
       const data = await res.json();
-      
       if(res.ok || data.success) {
-        if (e) {
-          alert("บันทึกชื่อ-นามสกุล สำเร็จ!");
-          setIsNameModalOpen(false); 
-        }
-        
+        alert("บันทึกชื่อ-นามสกุล สำเร็จ!");
+        setIsNameModalOpen(false); 
         fetchProfileData(); 
-
-        // 🌟 ถ้านี่คือการบันทึกรูปภาพ ให้รีโหลดหน้าเพื่อให้ Top Navbar เปลี่ยนรูปทันที
-        if (!e && newImage) {
-          window.location.reload(); 
-        }
       } else {
         alert('❌ เกิดข้อผิดพลาด: ' + (data.error || 'ไม่สามารถบันทึกได้'));
       }
@@ -102,36 +148,11 @@ export default function Profile() {
     setSaving(false);
   };
 
-  // --- 🌟 1. ฟังก์ชันเมื่อเลือกรูป (ให้โชว์ Preview แต่ยังไม่บันทึก) ---
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImage(reader.result); // เก็บรูปลง Preview State จะทำให้ปุ่มโผล่มา
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // --- 🌟 2. ฟังก์ชันกดยกเลิกรูปภาพ ---
-  const handleCancelImage = () => {
-    setPreviewImage(null); // ล้างค่า Preview ปุ่มจะหายไป รูปจะกลับไปเป็นอันเดิม
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  // --- 🌟 3. ฟังก์ชันกดบันทึกรูปภาพ ---
-  const handleSaveImage = async () => {
-    setIsUploadingImage(true);
-    await saveProfileData(null, previewImage); // เรียก API ตัวเดิมเพื่อส่งรูปไปบันทึก
-    setIsUploadingImage(false);
-    setPreviewImage(null); // เคลียร์ Preview
-  };
-
- const handleSaveBankAccount = async (e) => {
+  // ==============================================================
+  // 🌟 ฟังก์ชันบันทึกบัญชีธนาคาร
+  // ==============================================================
+  const handleSaveBankAccount = async (e) => {
     e.preventDefault(); 
-    
-    // เช็กตัวแปร formAccNumber ให้ตรงกับ State ที่คุณสร้างไว้
     if (!formBankCode || !formAccNumber) return alert('กรุณากรอกข้อมูลให้ครบทุกช่องครับ');
     if (!formBankBook) return alert('กรุณาอัปโหลดภาพหน้าสมุดบัญชีด้วยครับ');
     
@@ -142,7 +163,7 @@ export default function Profile() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
             username: username, 
-            bankName: formBankCode, // 🌟 เปลี่ยนชื่อ Key เป็น bankName และส่งชื่อธนาคารไป
+            bankName: formBankCode, 
             accNumber: formAccNumber, 
             accName: fullName, 
             bankBookImage: formBankBook 
@@ -151,10 +172,10 @@ export default function Profile() {
       const data = await res.json();
       
       if (data.success) {
-        alert(data.message);
+        alert("เพิ่มบัญชีธนาคารสำเร็จ กรุณารอแอดมินตรวจสอบ");
         setIsBankModalOpen(false); 
         setFormBankCode('');
-        setFormAccNumber(''); // 🌟 แก้ชื่อให้ตรงกับตัวแปรที่รับค่า (สมมติว่าชื่อ setFormAccNumber)
+        setFormAccountNumber(''); 
         setFormBankBook(null);
         fetchProfileData(); 
       } else {
@@ -164,35 +185,92 @@ export default function Profile() {
       alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
     }
     setSaving(false);
-    };
+  };
+
+  // ==============================================================
+  // 🌟 ระบบ OTP เบอร์โทร (Movider)
+  // ==============================================================
+  const requestOTP = async () => {
+    if (!phoneInput || phoneInput.length < 8) return alert('กรุณากรอกเบอร์โทรที่ถูกต้อง');
+    setSaving(true);
+    try {
+      const res = await fetch('https://api.run9.app/api/user/request-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, phone: phoneInput })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('ส่งรหัส OTP ไปยังเบอร์ของคุณแล้ว');
+        setOtpStep(2); // เปลี่ยนไปหน้ากรอก OTP
+      } else {
+        alert('❌ ส่ง OTP ล้มเหลว: ' + data.error);
+      }
+    } catch (err) {
+      alert('เชื่อมต่อ Gateway ไม่ได้');
+    }
+    setSaving(false);
+  };
+
+  const verifyOTP = async () => {
+    if (!otpCode || otpCode.length < 4) return alert('กรุณากรอก OTP ให้ครบ');
+    setSaving(true);
+    try {
+      const res = await fetch('https://api.run9.app/api/user/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, phone: phoneInput, otp: otpCode })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('✅ ยืนยันเบอร์โทรศัพท์สำเร็จ!');
+        setIsPhoneModalOpen(false);
+        fetchProfileData();
+      } else {
+        alert('❌ รหัส OTP ไม่ถูกต้อง');
+      }
+    } catch (err) {
+      alert('เชื่อมต่อไม่สำเร็จ');
+    }
+    setSaving(false);
+  };
+
   const handleLogout = () => {
     if(window.confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
       localStorage.removeItem('username');
-      localStorage.removeItem('user');
+      localStorage.removeItem('userProfile'); // ล้าง profile ด้วย
       window.location.href = './prelogin'; 
     }
   };
 
-  const ListItem = ({ icon: Icon, title, value, isEmpty, onClickAdd, color }) => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+  // 🌟 กรองรายชื่อธนาคาร ให้แสดงเฉพาะของประเทศผู้ใช้งาน
+  const filteredBanks = bankMasterList.filter(b => {
+    if (!profile.Country || !b.Country) return true; // ถ้าไม่มีข้อมูลประเทศให้โชว์ทั้งหมด
+    // ค้นหาว่าชื่อประเทศของผู้ใช้ (เช่น "Laos (+856)") มีคำที่ตรงกับประเทศของธนาคารหรือไม่
+    return profile.Country.toLowerCase().includes(b.Country.toLowerCase()) || b.Country.toLowerCase().includes('all');
+  });
+
+  const ListItem = ({ icon: Icon, title, value, isEmpty, onClickAdd, color, isVerified }) => (
+    <div className="profile-list-item">
       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-        <div style={{ background: 'rgba(50, 100, 255, 0.1)', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', color: color || '#3B82F6' }}>
+        <div className="profile-list-icon" style={{ color: color || '#3B82F6' }}>
           <Icon size={20} />
         </div>
         <div>
-          <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '2px' }}>{title}</div>
-          <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: isEmpty ? '#64748B' : '#E2E8F0' }}>
+          <div className="profile-list-title">{title}</div>
+          <div className={`profile-list-value ${isEmpty ? 'empty' : ''}`}>
             {isEmpty ? 'ไม่พบข้อมูล' : value}
+            {isVerified && <CheckCircle size={14} color="#10B981" style={{ marginLeft: '6px' }} />}
           </div>
         </div>
       </div>
       <div>
         {isEmpty ? (
-          <button onClick={onClickAdd} style={{ background: 'transparent', border: 'none', color: '#3B82F6', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+          <button onClick={onClickAdd} className="profile-add-btn">
             <PlusCircle size={24} />
           </button>
         ) : (
-          <div style={{ fontSize: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10B981', padding: '4px 10px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}>
+          <div className="profile-badge-success">
             <CheckCircle size={12} color="#10B981" /> บันทึกแล้ว
           </div>
         )}
@@ -214,20 +292,19 @@ export default function Profile() {
       </div>
 
       {/* ================= 2. การ์ดผู้ใช้งาน (พร้อมปุ่มบันทึก/ยกเลิกรูปภาพ) ================= */}
-      <div style={{ background: 'linear-gradient(180deg, #1A1F2B 0%, #12161F 100%)', border: '1px solid rgba(50, 100, 255, 0.3)', borderRadius: '20px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', marginBottom: '25px', position: 'relative' }}>
+      <div className="profile-user-card">
         
-        {/* แถวข้อมูล + รูปโปรไฟล์ */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           {/* กล่องรูปภาพ */}
-          <div onClick={() => !previewImage && fileInputRef.current.click()} style={{ width: '80px', height: '80px', background: '#1E293B', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: previewImage ? 'default' : 'pointer', overflow: 'hidden', position: 'relative', border: '2px solid rgba(50, 100, 255, 0.5)' }}>
+          <div onClick={() => !previewImage && fileInputRef.current.click()} className={`profile-image-container ${previewImage ? 'preview-mode' : ''}`}>
             {previewImage || profile.ProfileImageUrl ? (
-              <img src={previewImage || profile.ProfileImageUrl} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={previewImage || profile.ProfileImageUrl} alt="Profile" className="profile-img" />
             ) : (
               <User size={35} color="#94A3B8" />
             )}
             {!previewImage && (
-              <div style={{ position: 'absolute', bottom: 0, right: 0, background: 'rgba(0,0,0,0.7)', width: '100%', height: '30%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <Camera size={12} color="#fff" />
+              <div className="profile-camera-overlay">
+                <Camera size={14} color="#fff" />
               </div>
             )}
           </div>
@@ -236,18 +313,17 @@ export default function Profile() {
           <div>
             <div style={{ color: '#3B82F6', fontSize: '0.7rem', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '4px' }}>ACCOUNT USER</div>
             <div style={{ color: '#fff', fontSize: '1.4rem', fontWeight: 'bold', marginBottom: '4px' }}>{username}</div>
-           
-             <div className="text-gray-400">ID: {profile.Id || 'ไม่ระบุ'}</div>
+             <div style={{ color: '#94A3B8', fontSize: '0.8rem' }}>ID: {profile.Id || 'ไม่ระบุ'}</div>
           </div>
         </div>
 
         {/* 🌟 แถวปุ่ม บันทึก/ยกเลิก (แสดงเฉพาะตอนที่เลือกรูปใหม่มา Preview) */}
         {previewImage && (
-          <div style={{ display: 'flex', gap: '10px', width: '100%', marginTop: '5px' }}>
-            <button onClick={handleCancelImage} disabled={isUploadingImage} style={{ flex: 1, padding: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s' }}>
+          <div style={{ display: 'flex', gap: '10px', width: '100%', marginTop: '15px' }}>
+            <button onClick={handleCancelImage} disabled={isUploadingImage} className="profile-btn-cancel">
               ยกเลิก
             </button>
-            <button onClick={handleSaveImage} disabled={isUploadingImage} style={{ flex: 1, padding: '10px', background: 'linear-gradient(90deg, #3B82F6, #2563EB)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 15px rgba(59, 130, 246, 0.4)', transition: 'all 0.3s' }}>
+            <button onClick={handleSaveImage} disabled={isUploadingImage} className="profile-btn-save">
               {isUploadingImage ? 'กำลังบันทึก...' : 'บันทึกรูปภาพ'}
             </button>
           </div>
@@ -256,10 +332,23 @@ export default function Profile() {
       </div>
 
       {/* ================= 3. รายการข้อมูล (List View) ================= */}
-      <div style={{ background: 'linear-gradient(180deg, #1A1F2B 0%, #12161F 100%)', borderRadius: '20px', padding: '0 20px', border: '1px solid rgba(50, 100, 255, 0.2)', boxShadow: '0 4px 15px rgba(0,0,0,0.4)' }}>
+      <div className="profile-list-container">
         
         <ListItem icon={User} title="ชื่อ-นามสกุล" value={fullName} isEmpty={!fullName} onClickAdd={() => setIsNameModalOpen(true)} />
-        <ListItem icon={Phone} title="เบอร์โทรศัพท์" value={profile.PhoneNumber} isEmpty={!profile.PhoneNumber} onClickAdd={() => alert("ระบบกำลังเปิดให้เพิ่มเบอร์ในภายหลัง")} />
+        
+        <ListItem 
+          icon={Phone} 
+          title="เบอร์โทรศัพท์" 
+          value={profile.PhoneNumber} 
+          isEmpty={!profile.PhoneNumber} 
+          isVerified={profile.IsPhoneVerified}
+          onClickAdd={() => {
+            setOtpStep(1);
+            setPhoneInput('');
+            setIsPhoneModalOpen(true);
+          }} 
+        />
+        
         <ListItem icon={Mail} title="อีเมล (Email)" value="" isEmpty={true} onClickAdd={() => {}} />
         <ListItem icon={Calendar} title="วันเกิด" value="" isEmpty={true} onClickAdd={() => {}} />
         <ListItem icon={MapPin} title="ที่อยู่จัดส่งสินค้า" value="" isEmpty={true} onClickAdd={() => {}} />
@@ -276,45 +365,78 @@ export default function Profile() {
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <div style={{ background: 'rgba(50, 100, 255, 0.1)', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#3B82F6' }}><Store size={20} /></div>
+            <div className="profile-list-icon" style={{ color: '#3B82F6' }}><Store size={20} /></div>
             <div>
-              <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '2px' }}>ร้านค้าของฉัน</div>
-              <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#64748B' }}>ไม่พบข้อมูล</div>
+              <div className="profile-list-title">ร้านค้าของฉัน</div>
+              <div className="profile-list-value empty">ไม่พบข้อมูล</div>
             </div>
           </div>
-          <button style={{ background: 'transparent', border: 'none', color: '#3B82F6', cursor: 'pointer' }}><PlusCircle size={24} /></button>
+          <button className="profile-add-btn"><PlusCircle size={24} /></button>
         </div>
       </div>
 
       <div style={{ marginTop: '25px' }}>
-        <button onClick={handleLogout} style={{ width: '100%', padding: '15px', background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '16px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', transition: 'all 0.3s' }}>
+        <button onClick={handleLogout} className="profile-logout-btn">
           <LogOut size={20} /> ออกจากระบบ
         </button>
       </div>
 
+      {/* ================= 🌟 POPUP: ยืนยันเบอร์โทร (OTP) ================= */}
+      {isPhoneModalOpen && (
+        <div className="profile-modal-overlay">
+          <div className="profile-modal-content">
+            <button onClick={() => setIsPhoneModalOpen(false)} className="profile-modal-close"><X size={22} /></button>
+            <h3 className="profile-modal-title">ยืนยันเบอร์โทรศัพท์</h3>
+            
+            {otpStep === 1 ? (
+              <div className="profile-form">
+                <label className="profile-label">กรอกเบอร์โทรศัพท์มือถือ</label>
+                <input type="tel" placeholder="เช่น 0812345678" value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} className="profile-input" required />
+                <button onClick={requestOTP} disabled={saving} className="profile-btn-save mt-3">
+                  {saving ? 'กำลังประมวลผล...' : 'ขอรับรหัส OTP'}
+                </button>
+              </div>
+            ) : (
+              <div className="profile-form">
+                <div className="profile-warning-box bg-blue">
+                  <MessageSquare size={16} />
+                  <span>ระบบส่งรหัส OTP ไปที่ <b>{phoneInput}</b> แล้ว</span>
+                </div>
+                <label className="profile-label">รหัส OTP 6 หลัก</label>
+                <input type="text" placeholder="กรอกรหัส OTP ที่ได้รับทาง SMS" value={otpCode} onChange={(e) => setOtpCode(e.target.value)} className="profile-input" style={{ textAlign: 'center', letterSpacing: '3px', fontSize: '1.2rem', fontWeight: 'bold' }} required />
+                <button onClick={verifyOTP} disabled={saving} className="profile-btn-save mt-3">
+                  {saving ? 'กำลังตรวจสอบ...' : 'ยืนยันรหัส OTP'}
+                </button>
+                <button onClick={() => setOtpStep(1)} className="profile-btn-cancel mt-2">กลับไปแก้ไขเบอร์โทร</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ================= 🌟 POPUP: เพิ่มชื่อ-นามสกุล ================= */}
       {isNameModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(11, 14, 20, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px', boxSizing: 'border-box' }}>
-          <div style={{ background: 'linear-gradient(180deg, #1A1F2B 0%, #12161F 100%)', border: '1px solid rgba(50, 100, 255, 0.3)', padding: '25px', borderRadius: '24px', width: '100%', maxWidth: '400px', position: 'relative', animation: 'slideUp 0.2s ease-out' }}>
-            <button onClick={() => { setIsNameModalOpen(false); fetchProfileData(); }} style={{ position: 'absolute', top: '20px', right: '20px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#94A3B8' }}><X size={22} /></button>
-            <h3 style={{ margin: '0 0 10px 0', color: '#FFFFFF', fontSize: '1.2rem' }}>เพิ่มชื่อ-นามสกุล</h3>
+        <div className="profile-modal-overlay">
+          <div className="profile-modal-content">
+            <button onClick={() => setIsNameModalOpen(false)} className="profile-modal-close"><X size={22} /></button>
+            <h3 className="profile-modal-title">เพิ่มชื่อ-นามสกุล</h3>
             
-            <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#EF4444', padding: '12px', borderRadius: '12px', fontSize: '0.85rem', marginBottom: '20px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-              <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div className="profile-warning-box">
+              <AlertCircle size={18} style={{ flexShrink: 0 }} />
               <span><strong>คำเตือน:</strong> ชื่อนี้ต้องตรงกับบัญชีธนาคาร หากบันทึกแล้วจะไม่สามารถแก้ไขได้</span>
             </div>
 
-            <form onSubmit={saveProfileData} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <form onSubmit={saveProfileData} className="profile-form">
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#94A3B8', marginBottom: '5px' }}>ชื่อจริง</label>
-                <input type="text" placeholder="กรอกชื่อจริง" value={profile.FirstName} onChange={(e) => setProfile({...profile, FirstName: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: '#0B0E14', color: '#fff', fontSize: '0.95rem', boxSizing: 'border-box', outline: 'none' }} required />
+                <label className="profile-label">ชื่อจริง</label>
+                <input type="text" placeholder="กรอกชื่อจริง" value={profile.FirstName} onChange={(e) => setProfile({...profile, FirstName: e.target.value})} className="profile-input" required />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#94A3B8', marginBottom: '5px' }}>นามสกุล</label>
-                <input type="text" placeholder="กรอกนามสกุล" value={profile.LastName} onChange={(e) => setProfile({...profile, LastName: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: '#0B0E14', color: '#fff', fontSize: '0.95rem', boxSizing: 'border-box', outline: 'none' }} required />
+                <label className="profile-label">นามสกุล</label>
+                <input type="text" placeholder="กรอกนามสกุล" value={profile.LastName} onChange={(e) => setProfile({...profile, LastName: e.target.value})} className="profile-input" required />
               </div>
 
-              <button type="submit" disabled={saving} style={{ width: '100%', padding: '14px', background: 'linear-gradient(90deg, #3B82F6, #2563EB)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', marginTop: '10px', boxShadow: '0 4px 15px rgba(59, 130, 246, 0.4)' }}>
+              <button type="submit" disabled={saving} className="profile-btn-save mt-3">
                 {saving ? 'กำลังบันทึก...' : 'ยืนยันการบันทึก'}
               </button>
             </form>
@@ -324,53 +446,47 @@ export default function Profile() {
 
       {/* ================= 🌟 POPUP: เพิ่มบัญชีธนาคาร ================= */}
       {isBankModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(11, 14, 20, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px', boxSizing: 'border-box' }}>
-          <div style={{ background: 'linear-gradient(180deg, #1A1F2B 0%, #12161F 100%)', border: '1px solid rgba(50, 100, 255, 0.3)', padding: '25px', borderRadius: '24px', width: '100%', maxWidth: '400px', position: 'relative', animation: 'slideUp 0.2s ease-out', maxHeight: '90vh', overflowY: 'auto' }}>
-            <button onClick={() => setIsBankModalOpen(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#94A3B8' }}><X size={22} /></button>
+        <div className="profile-modal-overlay">
+          <div className="profile-modal-content" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
+            <button onClick={() => setIsBankModalOpen(false)} className="profile-modal-close"><X size={22} /></button>
             
-            <h3 style={{ margin: '0 0 15px 0', color: '#FFFFFF', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ width: '4px', height: '20px', background: '#3B82F6', borderRadius: '4px', boxShadow: '0 0 8px rgba(59,130,246,0.5)' }}></span>
-              เพิ่มบัญชีธนาคารใหม่
+            <h3 className="profile-modal-title">
+              <span className="title-indicator"></span> เพิ่มบัญชีธนาคารใหม่
             </h3>
 
-            <form onSubmit={handleSaveBankAccount} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              
-             <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#94A3B8', marginBottom: '5px' }}>ธนาคาร</label>
-                <select value={formBankCode} onChange={(e) => setFormBankCode(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: '#0B0E14', color: '#fff', fontSize: '0.95rem', outline: 'none' }} required>
+            <form onSubmit={handleSaveBankAccount} className="profile-form">
+              <div>
+                <label className="profile-label">ธนาคาร (แสดงเฉพาะของประเทศคุณ)</label>
+                <select value={formBankCode} onChange={(e) => setFormBankCode(e.target.value)} className="profile-select" required>
                   <option value="" style={{color: '#000'}}>-- เลือกธนาคาร --</option>
-                  
-                  {/* 🌟 เปลี่ยน b.BankCode เป็น b.Id ตามฐานข้อมูลจริง */}
-                  {bankMasterList.map((b, idx) => (
-                  <option key={idx} value={b.BankName} style={{color: '#000'}}>
-                   🏛️ {b.BankName}
-                   </option>
+                  {/* 🌟 แสดงธนาคารที่ผ่านการกรองตามประเทศของ User แล้ว */}
+                  {filteredBanks.map((b, idx) => (
+                    <option key={idx} value={b.BankName} style={{color: '#000'}}>
+                      🏛️ {b.BankName}
+                    </option>
                   ))}
-                  
                 </select>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#94A3B8', marginBottom: '5px' }}>ชื่อบัญชี</label>
-                <input type="text" value={fullName} readOnly style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.95rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.02)', color: '#64748B', cursor: 'not-allowed', outline: 'none' }} />
+                <label className="profile-label">ชื่อบัญชี</label>
+                <input type="text" value={fullName} readOnly className="profile-input disabled" />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#94A3B8', marginBottom: '5px' }}>เลขที่บัญชี</label>
-                <input type="text" placeholder="ระบุเลขบัญชีที่ถูกต้อง" value={formAccNumber} onChange={(e) => setFormAccountNumber(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: '#0B0E14', color: '#fff', fontSize: '0.95rem', boxSizing: 'border-box', outline: 'none' }} required />
+                <label className="profile-label">เลขที่บัญชี</label>
+                <input type="text" placeholder="ระบุเลขบัญชีที่ถูกต้อง" value={formAccNumber} onChange={(e) => setFormAccountNumber(e.target.value)} className="profile-input" required />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#94A3B8', marginBottom: '5px' }}>อัปโหลดภาพหน้าสมุดบัญชี</label>
-                <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '120px', border: '2px dashed rgba(50, 100, 255, 0.4)', borderRadius: '8px', cursor: 'pointer', background: 'rgba(50, 100, 255, 0.05)', position: 'relative', overflow: 'hidden' }}>
+                <label className="profile-label">อัปโหลดภาพหน้าสมุดบัญชี</label>
+                <label className="profile-upload-box">
                   {formBankBook ? (
-                    <img src={formBankBook} alt="Book Bank Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    <img src={formBankBook} alt="Book Bank Preview" className="upload-preview" />
                   ) : (
                     <>
-                      <div style={{ color: '#3B82F6', marginBottom: '8px' }}>
-                        <Camera size={24} />
-                      </div>
-                      <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>คลิกเพื่อเลือกรูปภาพหน้าสมุด</span>
+                      <div className="upload-icon"><Camera size={24} /></div>
+                      <span className="upload-text">คลิกเพื่อเลือกรูปภาพหน้าสมุด</span>
                     </>
                   )}
                   <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
@@ -384,15 +500,13 @@ export default function Profile() {
                 </label>
               </div>
 
-              <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '12px', borderRadius: '8px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                <AlertCircle size={16} color="#3B82F6" style={{ flexShrink: 0, marginTop: '2px' }} />
-                <span style={{ fontSize: '0.75rem', color: '#93C5FD', lineHeight: '1.4' }}>
-                  ระบบจะตรวจสอบชื่อบัญชีกับเอกสาร KYC หากชื่อไม่ตรงกันจะไม่สามารถใช้งานได้
-                </span>
+              <div className="profile-warning-box bg-blue">
+                <AlertCircle size={16} />
+                <span>ระบบจะตรวจสอบชื่อบัญชีกับเอกสาร KYC หากชื่อไม่ตรงกันจะไม่สามารถใช้งานได้</span>
               </div>
 
-              <button type="submit" disabled={saving} style={{ width: '100%', padding: '14px', background: 'linear-gradient(90deg, #3B82F6, #2563EB)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', marginTop: '5px', boxShadow: '0 4px 15px rgba(59, 130, 246, 0.4)' }}>
-                {saving ? 'กำลังบันทึก...' : 'ส่งข้อมูลตรวจสอบบัญชี'}
+              <button type="submit" disabled={saving} className="profile-btn-save mt-2">
+                {saving ? 'กำลังส่งข้อมูล...' : 'ส่งข้อมูลตรวจสอบบัญชี'}
               </button>
             </form>
           </div>
