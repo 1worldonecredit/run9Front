@@ -3,35 +3,31 @@ import { User, Landmark, Phone, Mail, Calendar, MapPin, Store, PlusCircle, Check
 
 export default function Profile() {
   const [stats, setStats] = useState({ daysLeft: 0, isEligible: false, freeTicketsToday: 0, gameHistory: [] });
-  const [profile, setProfile] = useState({ ProfileImageUrl: null, FirstName: '', LastName: '', PhoneNumber: '', IsPhoneVerified: false, Country: '' });
+  const [profile, setProfile] = useState({ ProfileImageUrl: null, FirstName: '', LastName: '', PhoneNumber: '', IsPhoneVerified: false });
   
   const [activeBank, setActiveBank] = useState(null); 
   const [bankMasterList, setBankMasterList] = useState([]); 
   
-  // ควบคุมการเปิด/ปิด Popups
   const [isBankModalOpen, setIsBankModalOpen] = useState(false); 
   const [isNameModalOpen, setIsNameModalOpen] = useState(false); 
-  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false); // 🌟 State สำหรับเปิดหน้า OTP
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
   
-  // State สำหรับเพิ่มบัญชีธนาคาร
+  // 🌟 ตัวแปรรับค่าฟอร์มธนาคาร
   const [formBankCode, setFormBankCode] = useState('');
   const [formAccNumber, setFormAccountNumber] = useState('');
   const [formBankBook, setFormBankBook] = useState(null); 
 
-  // 🌟 State สำหรับจัดการเบอร์โทรและ OTP
   const [phoneInput, setPhoneInput] = useState('');
-  const [otpStep, setOtpStep] = useState(1); // 1 = กรอกเบอร์, 2 = กรอก OTP
+  const [otpStep, setOtpStep] = useState(1);
   const [otpCode, setOtpCode] = useState('');
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  // State จัดการรูปภาพชั่วคราวก่อนบันทึก
   const fileInputRef = useRef(null);
   const [previewImage, setPreviewImage] = useState(null); 
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  // ดึงชื่อคนที่ล็อกอินอยู่จากระบบ
   const username = localStorage.getItem('username');
   const fullName = `${profile.FirstName || ''} ${profile.LastName || ''}`.trim();
 
@@ -57,6 +53,7 @@ export default function Profile() {
     fetch(`https://api.run9.app/api/system/banks?username=${username}`)
       .then(res => res.json())
       .then(data => {
+        // 🌟 รับรายชื่อธนาคารที่ตรงกับประเทศแล้วมาเก็บไว้
         if (data.success) setBankMasterList(data.banks);
       })
       .catch(err => console.error("Error fetching system banks:", err));
@@ -69,22 +66,18 @@ export default function Profile() {
     }
   }, [username]);
 
-  // ==============================================================
-  // 🌟 ฟังก์ชันจัดการรูปโปรไฟล์ (Preview -> Save/Cancel)
-  // ==============================================================
+  // ฟังก์ชันจัดการรูปโปรไฟล์
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImage(reader.result); // แสดงตัวอย่างภาพ ปุ่มบันทึกจะเด้งขึ้นมา
-      };
+      reader.onloadend = () => setPreviewImage(reader.result);
       reader.readAsDataURL(file);
     }
   };
 
   const handleCancelImage = () => {
-    setPreviewImage(null); // เคลียร์ภาพตัวอย่าง กลับไปใช้ภาพเดิมจาก DB
+    setPreviewImage(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -96,7 +89,7 @@ export default function Profile() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           username: username,
-          imageBase64: previewImage, // ส่งภาพใหม่ไป
+          imageBase64: previewImage,
           firstName: profile.FirstName, 
           lastName: profile.LastName,
           phone: profile.PhoneNumber
@@ -106,19 +99,15 @@ export default function Profile() {
       if(res.ok || data.success) {
         alert("อัปเดตโปรไฟล์สำเร็จ!");
         setPreviewImage(null);
-        window.location.reload(); // 🌟 บังคับรีโหลดหน้า เพื่อให้ Navbar และ Sidebar ดึงรูปใหม่ไปแสดงทันที
-      } else {
-        alert('❌ เกิดข้อผิดพลาด: ' + (data.error || 'ไม่สามารถบันทึกได้'));
-      }
+        window.location.reload(); 
+      } else alert('❌ เกิดข้อผิดพลาด: ' + (data.error || 'ไม่สามารถบันทึกได้'));
     } catch (err) {
       alert('⚠️ เกิดข้อผิดพลาดในการเชื่อมต่อ');
     }
     setIsUploadingImage(false);
   };
 
-  // ==============================================================
-  // 🌟 ฟังก์ชันบันทึกข้อมูลส่วนตัว (ชื่อ-นามสกุล)
-  // ==============================================================
+  // ฟังก์ชันบันทึกชื่อ-นามสกุล
   const saveProfileData = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -139,18 +128,14 @@ export default function Profile() {
         alert("บันทึกชื่อ-นามสกุล สำเร็จ!");
         setIsNameModalOpen(false); 
         fetchProfileData(); 
-      } else {
-        alert('❌ เกิดข้อผิดพลาด: ' + (data.error || 'ไม่สามารถบันทึกได้'));
-      }
+      } else alert('❌ เกิดข้อผิดพลาด: ' + (data.error || 'ไม่สามารถบันทึกได้'));
     } catch (err) {
       alert('⚠️ เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อบันทึกข้อมูล');
     }
     setSaving(false);
   };
 
-  // ==============================================================
-  // 🌟 ฟังก์ชันบันทึกบัญชีธนาคาร
-  // ==============================================================
+  // 🌟 ฟังก์ชันบันทึกบัญชีธนาคาร (อัปเดตส่งค่า bankCode แทนชื่อ)
   const handleSaveBankAccount = async (e) => {
     e.preventDefault(); 
     if (!formBankCode || !formAccNumber) return alert('กรุณากรอกข้อมูลให้ครบทุกช่องครับ');
@@ -163,7 +148,7 @@ export default function Profile() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
             username: username, 
-            bankName: formBankCode, 
+            bankCode: formBankCode, // 🌟 ส่ง BankCode ที่เลือกจาก Dropdown
             accNumber: formAccNumber, 
             accName: fullName, 
             bankBookImage: formBankBook 
@@ -172,43 +157,34 @@ export default function Profile() {
       const data = await res.json();
       
       if (data.success) {
-        alert("เพิ่มบัญชีธนาคารสำเร็จ กรุณารอแอดมินตรวจสอบ");
+        alert(data.message);
         setIsBankModalOpen(false); 
         setFormBankCode('');
         setFormAccountNumber(''); 
         setFormBankBook(null);
         fetchProfileData(); 
-      } else {
-        alert("❌ " + (data.error || data.message));
-      }
+      } else alert("❌ " + (data.error || data.message));
     } catch (err) {
       alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
     }
     setSaving(false);
   };
 
-  // ==============================================================
-  // 🌟 ระบบ OTP เบอร์โทร (Movider)
-  // ==============================================================
+  // ระบบ OTP
   const requestOTP = async () => {
     if (!phoneInput || phoneInput.length < 8) return alert('กรุณากรอกเบอร์โทรที่ถูกต้อง');
     setSaving(true);
     try {
       const res = await fetch('https://api.run9.app/api/user/request-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, phone: phoneInput })
       });
       const data = await res.json();
       if (data.success) {
         alert('ส่งรหัส OTP ไปยังเบอร์ของคุณแล้ว');
-        setOtpStep(2); // เปลี่ยนไปหน้ากรอก OTP
-      } else {
-        alert('❌ ส่ง OTP ล้มเหลว: ' + data.error);
-      }
-    } catch (err) {
-      alert('เชื่อมต่อ Gateway ไม่ได้');
-    }
+        setOtpStep(2);
+      } else alert('❌ ส่ง OTP ล้มเหลว: ' + data.error);
+    } catch (err) { alert('เชื่อมต่อ Gateway ไม่ได้'); }
     setSaving(false);
   };
 
@@ -217,8 +193,7 @@ export default function Profile() {
     setSaving(true);
     try {
       const res = await fetch('https://api.run9.app/api/user/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, phone: phoneInput, otp: otpCode })
       });
       const data = await res.json();
@@ -226,29 +201,18 @@ export default function Profile() {
         alert('✅ ยืนยันเบอร์โทรศัพท์สำเร็จ!');
         setIsPhoneModalOpen(false);
         fetchProfileData();
-      } else {
-        alert('❌ รหัส OTP ไม่ถูกต้อง');
-      }
-    } catch (err) {
-      alert('เชื่อมต่อไม่สำเร็จ');
-    }
+      } else alert('❌ รหัส OTP ไม่ถูกต้อง');
+    } catch (err) { alert('เชื่อมต่อไม่สำเร็จ'); }
     setSaving(false);
   };
 
   const handleLogout = () => {
     if(window.confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
       localStorage.removeItem('username');
-      localStorage.removeItem('userProfile'); // ล้าง profile ด้วย
+      localStorage.removeItem('userProfile');
       window.location.href = './prelogin'; 
     }
   };
-
-  // 🌟 กรองรายชื่อธนาคาร ให้แสดงเฉพาะของประเทศผู้ใช้งาน
-  const filteredBanks = bankMasterList.filter(b => {
-    if (!profile.Country || !b.Country) return true; // ถ้าไม่มีข้อมูลประเทศให้โชว์ทั้งหมด
-    // ค้นหาว่าชื่อประเทศของผู้ใช้ (เช่น "Laos (+856)") มีคำที่ตรงกับประเทศของธนาคารหรือไม่
-    return profile.Country.toLowerCase().includes(b.Country.toLowerCase()) || b.Country.toLowerCase().includes('all');
-  });
 
   const ListItem = ({ icon: Icon, title, value, isEmpty, onClickAdd, color, isVerified }) => (
     <div className="profile-list-item">
@@ -283,7 +247,6 @@ export default function Profile() {
   return (
     <div style={{ padding: '15px', paddingBottom: '80px', fontFamily: "'Prompt', sans-serif", background: '#0B0E14', minHeight: '100vh' }}>
       
-      {/* ================= 1. ส่วนหัวโปรไฟล์ระบบ ================= */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
         <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#FFFFFF', fontWeight: 'bold' }}>โปรไฟล์ระบบ</h2>
         <span style={{ fontSize: '0.75rem', color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '4px 10px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
@@ -291,11 +254,8 @@ export default function Profile() {
         </span>
       </div>
 
-      {/* ================= 2. การ์ดผู้ใช้งาน (พร้อมปุ่มบันทึก/ยกเลิกรูปภาพ) ================= */}
       <div className="profile-user-card">
-        
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          {/* กล่องรูปภาพ */}
           <div onClick={() => !previewImage && fileInputRef.current.click()} className={`profile-image-container ${previewImage ? 'preview-mode' : ''}`}>
             {previewImage || profile.ProfileImageUrl ? (
               <img src={previewImage || profile.ProfileImageUrl} alt="Profile" className="profile-img" />
@@ -317,38 +277,19 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* 🌟 แถวปุ่ม บันทึก/ยกเลิก (แสดงเฉพาะตอนที่เลือกรูปใหม่มา Preview) */}
         {previewImage && (
           <div style={{ display: 'flex', gap: '10px', width: '100%', marginTop: '15px' }}>
-            <button onClick={handleCancelImage} disabled={isUploadingImage} className="profile-btn-cancel">
-              ยกเลิก
-            </button>
+            <button onClick={handleCancelImage} disabled={isUploadingImage} className="profile-btn-cancel">ยกเลิก</button>
             <button onClick={handleSaveImage} disabled={isUploadingImage} className="profile-btn-save">
               {isUploadingImage ? 'กำลังบันทึก...' : 'บันทึกรูปภาพ'}
             </button>
           </div>
         )}
-
       </div>
 
-      {/* ================= 3. รายการข้อมูล (List View) ================= */}
       <div className="profile-list-container">
-        
         <ListItem icon={User} title="ชื่อ-นามสกุล" value={fullName} isEmpty={!fullName} onClickAdd={() => setIsNameModalOpen(true)} />
-        
-        <ListItem 
-          icon={Phone} 
-          title="เบอร์โทรศัพท์" 
-          value={profile.PhoneNumber} 
-          isEmpty={!profile.PhoneNumber} 
-          isVerified={profile.IsPhoneVerified}
-          onClickAdd={() => {
-            setOtpStep(1);
-            setPhoneInput('');
-            setIsPhoneModalOpen(true);
-          }} 
-        />
-        
+        <ListItem icon={Phone} title="เบอร์โทรศัพท์" value={profile.PhoneNumber} isEmpty={!profile.PhoneNumber} isVerified={profile.IsPhoneVerified} onClickAdd={() => { setOtpStep(1); setPhoneInput(''); setIsPhoneModalOpen(true); }} />
         <ListItem icon={Mail} title="อีเมล (Email)" value="" isEmpty={true} onClickAdd={() => {}} />
         <ListItem icon={Calendar} title="วันเกิด" value="" isEmpty={true} onClickAdd={() => {}} />
         <ListItem icon={MapPin} title="ที่อยู่จัดส่งสินค้า" value="" isEmpty={true} onClickAdd={() => {}} />
@@ -456,12 +397,12 @@ export default function Profile() {
 
             <form onSubmit={handleSaveBankAccount} className="profile-form">
               <div>
-                <label className="profile-label">ธนาคาร (แสดงเฉพาะของประเทศคุณ)</label>
+                <label className="profile-label">ธนาคาร</label>
+                {/* 🌟 แสดงธนาคารตามประเทศ ส่งค่า BankCode กลับไปหลังบ้าน */}
                 <select value={formBankCode} onChange={(e) => setFormBankCode(e.target.value)} className="profile-select" required>
                   <option value="" style={{color: '#000'}}>-- เลือกธนาคาร --</option>
-                  {/* 🌟 แสดงธนาคารที่ผ่านการกรองตามประเทศของ User แล้ว */}
-                  {filteredBanks.map((b, idx) => (
-                    <option key={idx} value={b.BankName} style={{color: '#000'}}>
+                  {bankMasterList.map((b, idx) => (
+                    <option key={idx} value={b.BankCode} style={{color: '#000'}}>
                       🏛️ {b.BankName}
                     </option>
                   ))}
@@ -501,7 +442,7 @@ export default function Profile() {
               </div>
 
               <div className="profile-warning-box bg-blue">
-                <AlertCircle size={16} />
+                <AlertCircle size={16} style={{ flexShrink: 0 }} />
                 <span>ระบบจะตรวจสอบชื่อบัญชีกับเอกสาร KYC หากชื่อไม่ตรงกันจะไม่สามารถใช้งานได้</span>
               </div>
 

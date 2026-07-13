@@ -1403,12 +1403,11 @@
         width: 400px;
     }
 }
-
 /* ====================================================
-   PROFILE STYLES & MODALS (Dark Glassmorphism)
+   🔥 PROFILE PAGE & MODALS (Dark Glassmorphism) 🔥
 ==================================================== */
 
-/* --- Profile List Items --- */
+/* --- กล่องแสดงรายการ Profile (List View) --- */
 .profile-list-container {
     background: linear-gradient(180deg, #1A1F2B 0%, #12161F 100%);
     border-radius: 20px;
@@ -1429,6 +1428,7 @@
     border-bottom: none;
 }
 
+/* ไอคอนในลิสต์ */
 .profile-list-icon {
     background: rgba(50, 100, 255, 0.1);
     width: 40px;
@@ -1455,15 +1455,17 @@
 
 .profile-list-value.empty {
     color: #64748B;
+    /* สีจางเมื่อไม่มีข้อมูล */
 }
 
-/* --- Badges & Buttons --- */
+/* --- ปุ่มเพิ่ม และป้ายบอกสถานะสำเร็จ --- */
 .profile-add-btn {
     background: transparent;
     border: none;
     color: #3B82F6;
     cursor: pointer;
     display: flex;
+    transition: 0.2s;
 }
 
 .profile-add-btn:hover {
@@ -1482,6 +1484,7 @@
     font-weight: bold;
 }
 
+/* --- ปุ่มออกจากระบบ --- */
 .profile-logout-btn {
     width: 100%;
     padding: 15px;
@@ -1503,7 +1506,7 @@
     background: rgba(239, 68, 68, 0.2);
 }
 
-/* --- Profile Image Upload --- */
+/* --- การ์ดผู้ใช้งาน (รูปภาพและ ID) --- */
 .profile-user-card {
     background: linear-gradient(180deg, #1A1F2B 0%, #12161F 100%);
     border: 1px solid rgba(50, 100, 255, 0.3);
@@ -1532,6 +1535,7 @@
 .profile-image-container.preview-mode {
     cursor: default;
     border-color: #10B981;
+    /* กรอบเขียวเมื่อ preview ภาพ */
 }
 
 .profile-img {
@@ -1552,7 +1556,7 @@
     align-items: center;
 }
 
-/* --- Modal Overlays & Forms --- */
+/* --- Modal Popup (พื้นหลังมัว + กล่องลอย) --- */
 .profile-modal-overlay {
     position: fixed;
     top: 0;
@@ -1577,10 +1581,10 @@
     width: 100%;
     max-width: 400px;
     position: relative;
-    animation: slideUp 0.3s ease-out;
+    animation: slideUpProfile 0.3s ease-out;
 }
 
-@keyframes slideUp {
+@keyframes slideUpProfile {
     from {
         transform: translateY(20px);
         opacity: 0;
@@ -1623,6 +1627,7 @@
     box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
 }
 
+/* --- ฟอร์ม กรอกข้อมูล --- */
 .profile-form {
     display: flex;
     flex-direction: column;
@@ -1636,7 +1641,7 @@
     margin-bottom: 5px;
 }
 
-/* 🌟 Input & Select (Style ตามรูป) */
+/* 🌟 ช่อง Input และ Dropdown Select */
 .profile-input,
 .profile-select {
     width: 100%;
@@ -1669,7 +1674,7 @@
     color: #fff;
 }
 
-/* 🌟 Image Upload Box (Dashed) */
+/* 🌟 กล่องอัปโหลดรูปภาพแบบเส้นประ */
 .profile-upload-box {
     display: flex;
     flex-direction: column;
@@ -1707,7 +1712,7 @@
     color: #94A3B8;
 }
 
-/* Warning Box */
+/* --- กล่องแจ้งเตือน (Warning Box) --- */
 .profile-warning-box {
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
@@ -1727,7 +1732,7 @@
     color: #93C5FD;
 }
 
-/* Buttons */
+/* --- ปุ่มกด (Buttons) --- */
 .profile-btn-save {
     width: 100%;
     padding: 14px;
