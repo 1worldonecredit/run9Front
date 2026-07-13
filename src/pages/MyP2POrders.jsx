@@ -21,7 +21,7 @@ export default function MyP2POrders() {
         if (parsed.currencySymbol) setCurrencySymbol(parsed.currencySymbol);
         if (parsed.username) {
             username = parsed.username;
-            setMyUsername(username); // 🌟 เซ็ตค่า myUsername
+            setMyUsername(username);
         }
       } catch (e) {}
     }
@@ -64,27 +64,23 @@ export default function MyP2POrders() {
           {orders.map(order => {
             
             // ==============================================================
-            // 🌟 2. ระบบแยกบทบาท (เช็กแบบแม่นยำ 100% ป้องกันชื่อเซนเซอร์)
+            // 🌟 2. ระบบแยกบทบาทที่รัดกุม 100% (ลบโค้ดอันตรายออกแล้ว)
             // ==============================================================
             const myName = String(myUsername || '').trim().toLowerCase();
-            const creatorName = String(order.Username || order.RequesterUsername || '').trim().toLowerCase();
+            // ดึงชื่อคนฝากเงิน (เผื่อ API ส่งมาในชื่อ Username หรือ RequesterUsername)
+            const creatorName = String(order.RequesterUsername || order.Username || '').trim().toLowerCase();
+            // ดึงชื่อคนรับงาน (เผื่อ API ส่งมาในชื่อ MatchedUsername หรือ MatcherUsername)
             const matcherName = String(order.MatchedUsername || order.MatcherUsername || '').trim().toLowerCase();
 
             let isRequester = (myName === creatorName);
             let isMatcher = (myName === matcherName);
 
-            // ท่าไม้ตาย: ดักจับกรณี API ส่งชื่อติดดอกจันมา (เช่น use***r1) 
-            // ระบบจะดู 3 ตัวอักษรแรก ถ้าตรงกัน ถือว่าเป็นคนๆ เดียวกัน
+            // ท่าไม้ตาย: ดักจับกรณี API ส่งชื่อติดดอกจันมา (เช่น use***r1)
             if (!isRequester && creatorName.includes('***') && myName.substring(0, 3) === creatorName.substring(0, 3)) {
                 isRequester = true;
             }
             if (!isMatcher && matcherName.includes('***') && myName.substring(0, 3) === matcherName.substring(0, 3)) {
                 isMatcher = true;
-            }
-            
-            // เผื่อกรณีผิดพลาดสูงสุด ถ้ายังหาไม่ได้ ให้ยึดว่าถ้าไม่ใช่คนรับงาน ต้องเป็นคนฝากเงิน
-            if (!isRequester && !isMatcher) {
-                isRequester = !isMatcher; 
             }
             // ==============================================================
 
@@ -107,21 +103,25 @@ export default function MyP2POrders() {
                 </div>
 
                 {/* ============================================== */}
-                {/* 🌟 สถานะ: MATCHED (มีผู้รับงานแล้ว รอโอนเงิน) */}
+                {/* 🌟 แสดงปุ่ม/ข้อความ ตามสถานะและบทบาทที่ถูกต้อง */}
                 {/* ============================================== */}
+                
+                {order.Status === 'PENDING' && (
+                   <button onClick={() => navigate(`/p2p-order/${order.Id}`)} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>
+                      ดูรายละเอียด
+                   </button>
+                )}
+
                 {order.Status === 'MATCHED' && (
                   <>
                     {isRequester ? (
-                      // 🔴 ถ้าเป็นคนฝากเงิน ให้โชว์ปุ่ม "ดูบัญชีและโอนเงิน"
-                      <button 
-                        onClick={() => navigate(`/p2p-order/${order.Id}`)} 
-                        style={{ width: '100%', background: 'linear-gradient(90deg, #10B981 0%, #059669 100%)', color: '#fff', border: 'none', padding: '12px', borderRadius: '10px', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-                      >
+                      // 🔴 คนฝากเงิน: โชว์ปุ่ม "ดูบัญชีและโอนเงิน" (สีเขียว)
+                      <button onClick={() => navigate(`/p2p-order/${order.Id}`)} style={{ width: '100%', background: 'linear-gradient(90deg, #10B981 0%, #059669 100%)', color: '#fff', border: 'none', padding: '12px', borderRadius: '10px', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
                         <span>ดูบัญชีและโอนเงิน</span>
                         <ChevronRight size={18} />
                       </button>
                     ) : isMatcher ? (
-                      // 🔵 ถ้าเป็นคนรับงาน ให้โชว์ข้อความ "รอผู้ฝากโอนเงิน" เฉยๆ (กดไม่ได้)
+                      // 🔵 คนรับงาน: โชว์ข้อความ "รอผู้ฝากโอนเงิน" (สีส้ม) แบบป้ายแจ้งเตือน กดไม่ได้
                       <div style={{ width: '100%', background: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B', border: '1px dashed #F59E0B', padding: '12px', borderRadius: '10px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                         ⏳ รอผู้ฝากโอนเงิน
                       </div>
@@ -129,30 +129,27 @@ export default function MyP2POrders() {
                   </>
                 )}
                 
-                {/* ============================================== */}
-                {/* 🌟 สถานะ: SLIP_UPLOADED (ส่งสลิปแล้ว) */}
-                {/* ============================================== */}
                 {order.Status === 'SLIP_UPLOADED' && (
                   <>
                     {isMatcher ? (
-                      // 🔵 ถ้าเป็นคนรับงาน ให้โชว์ปุ่มสีม่วงเด่นๆ เพื่อเข้าไปตรวจสลิป
-                      <button 
-                        onClick={() => navigate(`/p2p-order/${order.Id}`)}
-                        style={{ width: '100%', background: 'linear-gradient(90deg, #8B5CF6 0%, #6D28D9 100%)', color: '#fff', border: 'none', padding: '12px', borderRadius: '10px', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-                      >
+                      // 🔵 คนรับงาน: โชว์ปุ่ม "ตรวจสลิปและอนุมัติ" (สีม่วง)
+                      <button onClick={() => navigate(`/p2p-order/${order.Id}`)} style={{ width: '100%', background: 'linear-gradient(90deg, #8B5CF6 0%, #6D28D9 100%)', color: '#fff', border: 'none', padding: '12px', borderRadius: '10px', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
                         <span>ตรวจสลิปและอนุมัติ</span>
                         <ChevronRight size={18} />
                       </button>
                     ) : (
-                      // 🔴 ถ้าเป็นคนฝากเงิน โชว์แค่ปุ่มดูรายละเอียดธรรมดา
-                      <button 
-                        onClick={() => navigate(`/p2p-order/${order.Id}`)}
-                        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: '10px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer' }}
-                      >
+                      // 🔴 คนฝากเงิน: โชว์แค่ปุ่มดูรายละเอียด (เพราะต้องรอเค้าตรวจ)
+                      <button onClick={() => navigate(`/p2p-order/${order.Id}`)} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>
                         ดูรายละเอียด
                       </button>
                     )}
                   </>
+                )}
+
+                {order.Status === 'COMPLETED' && (
+                  <button onClick={() => navigate(`/p2p-order/${order.Id}`)} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>
+                    ดูรายละเอียดคำขอ
+                  </button>
                 )}
 
               </div>
