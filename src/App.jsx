@@ -112,6 +112,7 @@ function App() {
              <Route path="/topup" element={<TopUpMoney/>}/>
              <Route element={<P2POrderDetail />} path="/p2p-order/:id" />
              <Route element={<MyP2POrders />} path="/my-p2p-orders" />
+             <Route element={<MyP2POrders />} path="/my-p2p-orders" />
 
           </Route>
             <Route path="/prelogin" element={<Prelogin/>} />
