@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, CheckCircle, AlertCircle, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Clock, CheckCircle, AlertCircle, ChevronRight, Timer } from 'lucide-react';
 
 export default function MyP2POrders() {
   const navigate = useNavigate();
@@ -8,8 +8,29 @@ export default function MyP2POrders() {
   const [loading, setLoading] = useState(true);
   const [currencySymbol, setCurrencySymbol] = useState('฿');
   
-  // 🌟 1. เพิ่ม State สำหรับเก็บ Username ของคนที่กำลังล็อกอิน
+  // 🌟 เพิ่ม State สำหรับนับเวลาปัจจุบันของเครื่องลูกค้า
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
   const [myUsername, setMyUsername] = useState('');
+
+  // ฟังก์ชันดึงข้อมูล
+  const fetchMyOrders = (username) => {
+    fetch(`https://api.run9.app/api/p2p/my-orders/${username}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          // 🌟 รับค่า ElapsedSeconds มาแปลงเป็นเวลาหมดอายุ
+          const processedOrders = data.orders.map(o => ({
+            ...o,
+            // 300 วินาที = 5 นาที (แก้ตัวเลขตรงนี้ได้ถ้าต้องการเปลี่ยนเวลา)
+            localExpireTimestamp: Date.now() + ((300 - (o.ElapsedSeconds || 0)) * 1000)
+          }));
+          setOrders(processedOrders);
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
     const savedProfileStr = localStorage.getItem('userProfile');
@@ -21,21 +42,37 @@ export default function MyP2POrders() {
         if (parsed.currencySymbol) setCurrencySymbol(parsed.currencySymbol);
         if (parsed.username) {
             username = parsed.username;
-            setMyUsername(username); // 🌟 เซ็ตค่า myUsername
+            setMyUsername(username); 
         }
       } catch (e) {}
     }
 
     if (username) {
-      fetch(`https://api.run9.app/api/p2p/my-orders/${username}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) setOrders(data.orders);
-        })
-        .catch(err => console.error(err))
-        .finally(() => setLoading(false));
+      fetchMyOrders(username);
+      // 🌟 ให้รีเฟรชข้อมูลทุกๆ 10 วินาที เผื่อมีคนรับงาน
+      const intervalData = setInterval(() => fetchMyOrders(username), 10000);
+      return () => clearInterval(intervalData);
     }
   }, []);
+
+  // 🌟 อัปเดตเวลาปัจจุบันทุก 1 วินาทีเพื่อให้นาฬิกาเดิน
+  useEffect(() => {
+    const intervalTime = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(intervalTime);
+  }, []);
+
+  // 🌟 ฟังก์ชันคำนวณเวลานับถอยหลัง
+  const getCountdown = (localExpireTimestamp) => {
+    if (!localExpireTimestamp) return null;
+    const diff = localExpireTimestamp - currentTime.getTime();
+
+    if (diff <= 0) return <span style={{ color: '#EF4444', fontWeight: 'bold' }}>หมดเวลา</span>;
+
+    const minutes = Math.floor((diff / 1000) / 60);
+    const seconds = Math.floor((diff / 1000) % 60);
+    
+    return <span>{minutes} น. {seconds} วิ.</span>;
+  };
 
   const getStatusBadge = (status) => {
     switch(status) {
@@ -63,9 +100,6 @@ export default function MyP2POrders() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           {orders.map(order => {
             
-            // ==============================================================
-            // 🌟 2. ระบบแยกบทบาท (เช็กแบบแม่นยำ 100% ป้องกันชื่อเซนเซอร์)
-            // ==============================================================
             const myName = String(myUsername || '').trim().toLowerCase();
             const creatorName = String(order.Username || order.RequesterUsername || '').trim().toLowerCase();
             const matcherName = String(order.MatchedUsername || order.MatcherUsername || '').trim().toLowerCase();
@@ -73,23 +107,18 @@ export default function MyP2POrders() {
             let isRequester = (myName === creatorName);
             let isMatcher = (myName === matcherName);
 
-            // ท่าไม้ตาย: ดักจับกรณี API ส่งชื่อติดดอกจันมา (เช่น use***r1) 
-            // ระบบจะดู 3 ตัวอักษรแรก ถ้าตรงกัน ถือว่าเป็นคนๆ เดียวกัน
             if (!isRequester && creatorName.includes('***') && myName.substring(0, 3) === creatorName.substring(0, 3)) {
                 isRequester = true;
             }
             if (!isMatcher && matcherName.includes('***') && myName.substring(0, 3) === matcherName.substring(0, 3)) {
                 isMatcher = true;
             }
-            
-            // เผื่อกรณีผิดพลาดสูงสุด ถ้ายังหาไม่ได้ ให้ยึดว่าถ้าไม่ใช่คนรับงาน ต้องเป็นคนฝากเงิน
             if (!isRequester && !isMatcher) {
                 isRequester = !isMatcher; 
             }
-            // ==============================================================
 
             return (
-              <div key={order.Id} style={{ background: '#1C1F26', borderRadius: '16px', padding: '15px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div key={order.Id} style={{ background: '#1C1F26', borderRadius: '16px', padding: '15px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>#{order.Id} • {order.OrderType === 'DEPOSIT' ? 'เติมเงิน' : 'ถอนเงิน'}</span>
@@ -102,17 +131,21 @@ export default function MyP2POrders() {
                     <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#fff' }}>{currencySymbol}{new Intl.NumberFormat('th-TH').format(order.Amount)}</h3>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <p style={{ margin: '0 0 5px 0', fontSize: '0.75rem', color: '#64748B' }}>{new Date(order.CreatedAt).toLocaleDateString('th-TH')}</p>
+                    {/* 🌟 แสดงเวลานับถอยหลังแทนวันที่ หากสถานะเป็น PENDING */}
+                    {order.Status === 'PENDING' ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#F59E0B', fontSize: '0.85rem', background: 'rgba(245, 158, 11, 0.1)', padding: '4px 10px', borderRadius: '20px' }}>
+                            <Timer size={14} />
+                            {getCountdown(order.localExpireTimestamp)}
+                        </div>
+                    ) : (
+                        <p style={{ margin: '0 0 5px 0', fontSize: '0.75rem', color: '#64748B' }}>{new Date(order.CreatedAt).toLocaleDateString('th-TH')}</p>
+                    )}
                   </div>
                 </div>
 
-                {/* ============================================== */}
-                {/* 🌟 สถานะ: MATCHED (มีผู้รับงานแล้ว รอโอนเงิน) */}
-                {/* ============================================== */}
                 {order.Status === 'MATCHED' && (
                   <>
                     {isRequester ? (
-                      // 🔴 ถ้าเป็นคนฝากเงิน ให้โชว์ปุ่ม "ดูบัญชีและโอนเงิน"
                       <button 
                         onClick={() => navigate(`/p2p-order/${order.Id}`)} 
                         style={{ width: '100%', background: 'linear-gradient(90deg, #10B981 0%, #059669 100%)', color: '#fff', border: 'none', padding: '12px', borderRadius: '10px', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
@@ -121,7 +154,6 @@ export default function MyP2POrders() {
                         <ChevronRight size={18} />
                       </button>
                     ) : isMatcher ? (
-                      // 🔵 ถ้าเป็นคนรับงาน ให้โชว์ข้อความ "รอผู้ฝากโอนเงิน" เฉยๆ (กดไม่ได้)
                       <div style={{ width: '100%', background: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B', border: '1px dashed #F59E0B', padding: '12px', borderRadius: '10px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                         ⏳ รอผู้ฝากโอนเงิน
                       </div>
@@ -129,13 +161,9 @@ export default function MyP2POrders() {
                   </>
                 )}
                 
-                {/* ============================================== */}
-                {/* 🌟 สถานะ: SLIP_UPLOADED (ส่งสลิปแล้ว) */}
-                {/* ============================================== */}
                 {order.Status === 'SLIP_UPLOADED' && (
                   <>
                     {isMatcher ? (
-                      // 🔵 ถ้าเป็นคนรับงาน ให้โชว์ปุ่มสีม่วงเด่นๆ เพื่อเข้าไปตรวจสลิป
                       <button 
                         onClick={() => navigate(`/p2p-order/${order.Id}`)}
                         style={{ width: '100%', background: 'linear-gradient(90deg, #8B5CF6 0%, #6D28D9 100%)', color: '#fff', border: 'none', padding: '12px', borderRadius: '10px', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
@@ -144,7 +172,6 @@ export default function MyP2POrders() {
                         <ChevronRight size={18} />
                       </button>
                     ) : (
-                      // 🔴 ถ้าเป็นคนฝากเงิน โชว์แค่ปุ่มดูรายละเอียดธรรมดา
                       <button 
                         onClick={() => navigate(`/p2p-order/${order.Id}`)}
                         style={{ width: '100%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: '10px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer' }}
