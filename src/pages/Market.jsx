@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Bell, Download, Upload, ShieldCheck, FileText, CheckCircle, ChevronRight } from 'lucide-react';
+import { Search, Bell, Download, Upload, ShieldCheck, FileText, CheckCircle, ChevronRight, Timer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Market() {
@@ -9,6 +9,9 @@ export default function Market() {
   const [myUsername, setMyUsername] = useState('');
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // 🌟 เพิ่ม State สำหรับนับเวลาปัจจุบันของเครื่องเพื่อให้นาฬิกาเดิน
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     const savedProfileStr = localStorage.getItem('userProfile');
@@ -17,30 +20,62 @@ export default function Market() {
       if(parsed.currencySymbol) setCurrencySymbol(parsed.currencySymbol);
       if(parsed.username) setMyUsername(parsed.username);
     }
+    
     fetchTasks();
+    // 🌟 โหลดงานใหม่เข้า Market ทุก 10 วินาที
+    const intervalTasks = setInterval(fetchTasks, 10000);
+    return () => clearInterval(intervalTasks);
   }, []);
 
-  // 🌟 ฟังก์ชันดึงข้อมูลกระดาน Market (แก้ให้ส่ง ประเทศ ไปด้วย)
+  // 🌟 อัปเดตเวลาปัจจุบันทุก 1 วินาที
+  useEffect(() => {
+    const intervalTime = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(intervalTime);
+  }, []);
+
   const fetchTasks = async () => {
     try {
-      // 1. ดึงข้อมูลประเทศของคนที่ล็อกอินอยู่
       const savedProfileStr = localStorage.getItem('userProfile');
       let myCountry = '';
       if (savedProfileStr) {
         const parsed = JSON.parse(savedProfileStr);
-        myCountry = parsed.country || parsed.Country || ''; // เช็กให้ตรงกับชื่อ key ที่คุณบันทึกไว้
+        myCountry = parsed.country || parsed.Country || ''; 
       }
 
-      // 2. แนบ country ต่อท้าย URL ไปให้ API ฝั่ง Backend กรองข้อมูล
       const response = await fetch(`https://api.run9.app/api/p2p/orders/pending?country=${myCountry}`);
       const data = await response.json();
       
-      if (data.success) setTasks(data.orders);
+      if (data.success) {
+        // 🌟 ดึงตั้งค่าเวลา (timeoutSetting) จากศูนย์กลาง (Backend) มาใช้งาน
+        // ถ้า Backend ไม่ได้ส่งมา ให้ใช้ค่ามาตรฐานคือ 300 วินาที
+        const apiTimeout = data.timeoutSetting || 300; 
+
+        // 🌟 คำนวณเวลาหมดอายุให้แต่ละออเดอร์
+        const processedTasks = data.orders.map(o => ({
+          ...o,
+          localExpireTimestamp: Date.now() + ((apiTimeout - (o.ElapsedSeconds || 0)) * 1000)
+        }));
+        setTasks(processedTasks);
+      }
     } catch (error) {
       console.error("Error fetching tasks:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // 🌟 ฟังก์ชันคำนวณเวลานับถอยหลัง
+  const getCountdown = (localExpireTimestamp) => {
+    if (!localExpireTimestamp) return null;
+    const diff = localExpireTimestamp - currentTime.getTime();
+
+    // ถ้าระบบ Auto-refresh ยังไม่ดึงข้อมูลใหม่มาลบการ์ดนี้ทิ้ง ให้แสดงคำว่าหมดเวลารอไปก่อน
+    if (diff <= 0) return <span style={{ color: '#EF4444' }}>หมดเวลา</span>;
+
+    const minutes = Math.floor((diff / 1000) / 60);
+    const seconds = Math.floor((diff / 1000) % 60);
+    
+    return <span>{minutes} น. {seconds} วิ.</span>;
   };
 
   const maskUsername = (name) => {
@@ -78,7 +113,6 @@ export default function Market() {
   return (
     <div style={{ padding: '20px 15px', paddingBottom: '90px', fontFamily: "'Prompt', sans-serif", background: '#0B0E14', minHeight: '100vh', color: '#fff' }}>
       
-      {/* 🌟 Header: คืนค่าให้ Search กับ Bell อยู่แบบเดิม สวยๆ คลีนๆ */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', gap: '15px' }}>
         <div style={{ position: 'relative', flex: 1 }}>
           <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -94,7 +128,6 @@ export default function Market() {
         </button>
       </div>
 
-      {/* 🌟 Promo Banner */}
       <div style={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%)', borderRadius: '20px', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', boxShadow: '0 10px 25px rgba(59, 130, 246, 0.3)', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)', borderRadius: '50%' }}></div>
         <div style={{ zIndex: 1 }}>
@@ -106,7 +139,6 @@ export default function Market() {
         <ShieldCheck size={55} color="rgba(255,255,255,0.9)" style={{ zIndex: 1 }} />
       </div>
 
-      {/* 🌟 Categories Toggle */}
       <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', borderRadius: '14px', padding: '5px', marginBottom: '25px', border: '1px solid rgba(255,255,255,0.05)' }}>
         <button 
           onClick={() => setActiveCategory('DEPOSIT')}
@@ -122,7 +154,6 @@ export default function Market() {
         </button>
       </div>
       
-      {/* 🌟 จุดที่ย้ายปุ่มมาใหม่! วางขนานกับหัวข้อ "รายการรอดำเนินการ" */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
         <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#E2E8F0' }}>รายการรอดำเนินการ</h3>
         
@@ -139,7 +170,6 @@ export default function Market() {
         </button>
       </div>
 
-      {/* 🌟 Task List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: '#64748B' }}>กำลังโหลด...</div>
@@ -160,20 +190,31 @@ export default function Market() {
                 </div>
               </div>
 
-              {/* Soidao ID Card */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '12px' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-                  {task.ProfileImageUrl && <img src={task.ProfileImageUrl} alt="user" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ margin: '0 0 2px 0', fontSize: '0.9rem', fontWeight: 'bold', color: '#E2E8F0' }}>
-                    {maskUsername(task.Username)}
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <CheckCircle size={12} color="#10B981" />
-                    <span style={{ fontSize: '0.7rem', color: '#10B981' }}>ยืนยันตัวตนแล้ว</span>
+              {/* Soidao ID Card & 🌟 นาฬิกานับถอยหลัง */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '12px' }}>
+                
+                {/* ข้อมูลโปรไฟล์ */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                    {task.ProfileImageUrl && <img src={task.ProfileImageUrl} alt="user" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                  </div>
+                  <div>
+                    <p style={{ margin: '0 0 2px 0', fontSize: '0.9rem', fontWeight: 'bold', color: '#E2E8F0' }}>
+                      {maskUsername(task.Username)}
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <CheckCircle size={12} color="#10B981" />
+                      <span style={{ fontSize: '0.7rem', color: '#10B981' }}>ยืนยันตัวตนแล้ว</span>
+                    </div>
                   </div>
                 </div>
+
+                {/* 🌟 นาฬิกานับถอยหลัง */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B', padding: '6px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                  <Timer size={14} />
+                  {getCountdown(task.localExpireTimestamp)}
+                </div>
+
               </div>
 
               <button 
