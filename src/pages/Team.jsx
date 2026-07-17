@@ -110,7 +110,7 @@ export default function Team() {
     const promoLink = `https://soidao.run9.app/promo?ref=${myProfile.username}`;
     if (navigator.share) {
       navigator.share({
-        title: 'สอยดาวพารวย 9Plus',
+        title: 'เกมปลดรหัสตู้เซฟพารวย',
         text: 'โอกาสเปลี่ยนชีวิตมาถึงแล้ว! สมัครผ่านลิงก์ของฉันเพื่อรับสิทธิ์พิเศษ',
         url: promoLink,
       }).catch((error) => console.log('Error sharing', error));
