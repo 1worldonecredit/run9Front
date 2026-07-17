@@ -21,36 +21,52 @@ export default function Team() {
   const [coverImage, setCoverImage] = useState('/BG2.jpg');
   const [teamMembers, setTeamMembers] = useState([]);
 
-  useEffect(() => {
-    // 1. ดึงข้อมูลส่วนตัว
+ useEffect(() => {
+    // 1. ดึง Username ตัวเองจาก LocalStorage ก่อน
     const savedProfileStr = localStorage.getItem('userProfile');
+    let currentUsername = '';
     
     if (savedProfileStr) {
       try {
         const parsed = JSON.parse(savedProfileStr);
-        setMyProfile(prev => ({
-          ...prev,
-          username: parsed.username || 'User',
-          profileImageUrl: parsed.profileImageUrl || 'https://i.pravatar.cc/150?img=11',
-          currencySymbol: parsed.currencySymbol || '฿',
-          walletBalance: parsed.walletBalance || 25000.50,
-          totalCommission: parsed.totalCommission || 4500.00,
-          monthlyCommission: parsed.monthlyCommission || 1200.00
-        }));
+        currentUsername = parsed.username || '';
       } catch (e) {}
     }
 
-    // 🌟 ข้อมูลจำลองทีมงาน
-    setTimeout(() => {
-      setTeamMembers([
-        { id: 1, username: 'somchai_k', firstName: 'สมชาย', lastName: 'ใจดี', country: 'Thailand', profileImageUrl: 'https://i.pravatar.cc/150?img=59', commissionEarned: 230.50, registeredAt: '2023-05-15T10:00:00Z' },
-        { id: 2, username: 'mina_jp', firstName: 'Mina', lastName: 'Tanaka', country: 'Japan', profileImageUrl: 'https://i.pravatar.cc/150?img=47', commissionEarned: 4406.00, registeredAt: '2025-11-20T10:00:00Z' },
-        { id: 3, username: 'alex_dev', firstName: 'Alexander', lastName: 'Pierce', country: 'USA', profileImageUrl: 'https://i.pravatar.cc/150?img=12', commissionEarned: 395.64, registeredAt: '2026-06-01T10:00:00Z' },
-        { id: 4, username: 'noy_laos', firstName: 'น้อย', lastName: 'สะหวัน', country: 'Laos', profileImageUrl: 'https://i.pravatar.cc/150?img=5', commissionEarned: 120.00, registeredAt: new Date().toISOString() },
-      ]);
-      setLoading(false);
-    }, 500);
+    if (currentUsername) {
+      // 🌟 2. ยิง API ดึงข้อมูล Profile (เงินในกระเป๋า, ค่านายหน้า) ตามโค้ดของคุณ
+      fetch(`https://api.run9.app/api/user/profile-stats?username=${currentUsername}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.profile) {
+            setMyProfile(prev => ({
+              ...prev,
+              username: data.profile.username || currentUsername,
+              // ใช้รูปจาก API หรือรูปเริ่มต้นที่เราตั้งไว้
+              profileImageUrl: data.profile.profileImageUrl || '/BG2.jpg', 
+              currencySymbol: data.profile.currencySymbol || '฿',
+              walletBalance: data.profile.walletBalance || 0,
+              totalCommission: data.profile.totalCommission || 0,
+              monthlyCommission: data.profile.monthlyCommission || 0
+            }));
+          }
+        })
+        .catch(err => console.error("Error fetching profile stats:", err));
 
+      // 🌟 3. ยิง API ดึงรายชื่อทีมงานที่เราเพิ่งสร้าง
+      fetch(`https://api.run9.app/api/team/my-team/${currentUsername}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setTeamMembers(data.members);
+          }
+        })
+        .catch(err => console.error("Error fetching team:", err))
+        .finally(() => setLoading(false));
+        
+    } else {
+      setLoading(false); // ถ้าไม่ได้ Login ให้หยุดโหลด
+    }
   }, []);
 
   // 🌟 ฟังก์ชันจัดการอัปโหลดเปลี่ยนรูปปก (Cover Image)
