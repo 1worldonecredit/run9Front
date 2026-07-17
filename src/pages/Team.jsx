@@ -8,10 +8,9 @@ export default function Team() {
   
   // ข้อมูลส่วนตัว
   const [myProfile, setMyProfile] = useState({
-    username: data.profile.username || currentUsername,
-              // 🌟 แก้ไขตรงนี้: ถ้าไม่มีรูปโปรไฟล์ ให้ใช้รูป Avatar ค่าเริ่มต้นแทน
-    profileImageUrl: data.profile.profileImageUrl || 'https://i.pravatar.cc/150?img=11', 
-    currencySymbol: data.profile.currencySymbol || '฿',
+    username: '',
+    profileImageUrl: 'https://i.pravatar.cc/150?img=11', // เปลี่ยนตรงนี้ด้วย
+    currencySymbol: '฿',
     walletBalance: 0,
     totalCommission: 0,
     monthlyCommission: 0
@@ -23,7 +22,6 @@ export default function Team() {
   const [teamMembers, setTeamMembers] = useState([]);
 
  useEffect(() => {
-    // 1. ดึง Username ตัวเองจาก LocalStorage ก่อน
     const savedProfileStr = localStorage.getItem('userProfile');
     let currentUsername = '';
     
@@ -35,16 +33,16 @@ export default function Team() {
     }
 
     if (currentUsername) {
-      // 🌟 2. ยิง API ดึงข้อมูล Profile (เงินในกระเป๋า, ค่านายหน้า) ตามโค้ดของคุณ
+      // 🌟 1. ดึงข้อมูล Profile ของตัวเอง (สไตล์เดียวกับ Navbar)
       fetch(`https://api.run9.app/api/user/profile-stats?username=${currentUsername}`)
         .then(res => res.json())
         .then(data => {
           if (data.success && data.profile) {
             setMyProfile(prev => ({
               ...prev,
-              username: data.profile.username || currentUsername,
-              // ใช้รูปจาก API หรือรูปเริ่มต้นที่เราตั้งไว้
-              profileImageUrl: data.profile.profileImageUrl || '/BG2.jpg', 
+              username: data.profile.Username || data.profile.username || currentUsername,
+              // 🌟 ถ้าไม่มีรูป ให้สร้างรูปโปรไฟล์จากชื่ออัตโนมัติ (โลโก้สีทอง)
+              profileImageUrl: data.profile.ProfileImageUrl || data.profile.profileImageUrl || `https://ui-avatars.com/api/?name=${currentUsername}&background=CFA348&color=fff&size=150`, 
               currencySymbol: data.profile.currencySymbol || '฿',
               walletBalance: data.profile.walletBalance || 0,
               totalCommission: data.profile.totalCommission || 0,
@@ -52,9 +50,9 @@ export default function Team() {
             }));
           }
         })
-        .catch(err => console.error("Error fetching profile stats:", err));
+        .catch(err => console.error("Error fetching profile:", err));
 
-      // 🌟 3. ยิง API ดึงรายชื่อทีมงานที่เราเพิ่งสร้าง
+      // 🌟 2. ดึงข้อมูลทีมงาน
       fetch(`https://api.run9.app/api/team/my-team/${currentUsername}`)
         .then(res => res.json())
         .then(data => {
@@ -64,9 +62,8 @@ export default function Team() {
         })
         .catch(err => console.error("Error fetching team:", err))
         .finally(() => setLoading(false));
-        
     } else {
-      setLoading(false); // ถ้าไม่ได้ Login ให้หยุดโหลด
+      setLoading(false);
     }
   }, []);
 
