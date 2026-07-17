@@ -47,7 +47,7 @@ export default function Market() {
       
       if (data.success) {
         // ดึงตั้งค่าเวลา (timeoutSetting) จากศูนย์กลาง (Backend) มาใช้งาน
-        const apiTimeout = data.timeoutSetting || 300; 
+        const apiTimeout = data.timeoutSetting || 1800; 
 
         // คำนวณเวลาหมดอายุให้แต่ละออเดอร์
         const processedTasks = data.orders.map(o => ({

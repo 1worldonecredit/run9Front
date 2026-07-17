@@ -12,6 +12,7 @@ export default function P2POrderDetail() {
   const [currency, setCurrency] = useState('LAK'); 
 
   // State สำหรับฟอร์มโอนเงิน
+  const defaultDate = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
   const [confirmCodeInput, setConfirmCodeInput] = useState('');
   const [transferAmount, setTransferAmount] = useState('');
   const [transferDate, setTransferDate] = useState(defaultDate);
