@@ -8,9 +8,10 @@ export default function Team() {
   
   // ข้อมูลส่วนตัว
   const [myProfile, setMyProfile] = useState({
-    username: '',
-    profileImageUrl: '',
-    currencySymbol: '฿',
+    username: data.profile.username || currentUsername,
+              // 🌟 แก้ไขตรงนี้: ถ้าไม่มีรูปโปรไฟล์ ให้ใช้รูป Avatar ค่าเริ่มต้นแทน
+    profileImageUrl: data.profile.profileImageUrl || 'https://i.pravatar.cc/150?img=11', 
+    currencySymbol: data.profile.currencySymbol || '฿',
     walletBalance: 0,
     totalCommission: 0,
     monthlyCommission: 0
