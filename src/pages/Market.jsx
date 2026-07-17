@@ -46,11 +46,10 @@ export default function Market() {
       const data = await response.json();
       
       if (data.success) {
-        // 🌟 รับค่าเวลาจาก Database ผ่าน Backend
-        // ถ้า Backend ไม่ได้ส่งมา ให้ใช้ค่ามาตรฐาน (Fallback) เป็น 30 นาที (1800 วินาที)
-        const apiTimeout = data.timeoutSetting || 1800; 
+        // ดึงตั้งค่าเวลา (timeoutSetting) จากศูนย์กลาง (Backend) มาใช้งาน
+        const apiTimeout = data.timeoutSetting || 300; 
 
-        // 🌟 คำนวณเวลาหมดอายุให้แต่ละออเดอร์
+        // คำนวณเวลาหมดอายุให้แต่ละออเดอร์
         const processedTasks = data.orders.map(o => ({
           ...o,
           localExpireTimestamp: Date.now() + ((apiTimeout - (o.ElapsedSeconds || 0)) * 1000)
@@ -69,7 +68,7 @@ export default function Market() {
     if (!localExpireTimestamp) return null;
     const diff = localExpireTimestamp - currentTime.getTime();
 
-    // ถ้าระบบ Auto-refresh ยังไม่ดึงข้อมูลใหม่มาลบการ์ดนี้ทิ้ง ให้แสดงคำว่าหมดเวลารอไปก่อน
+    // เผื่อไว้กรณีที่มันยังไม่หายไปทันที (แต่จริงๆ มันจะถูกซ่อนจาก Filter ด้านล่างแล้ว)
     if (diff <= 0) return <span style={{ color: '#EF4444' }}>หมดเวลา</span>;
 
     const minutes = Math.floor((diff / 1000) / 60);
@@ -109,6 +108,15 @@ export default function Market() {
       alert("⚠️ เกิดข้อผิดพลาดในการเชื่อมต่อ");
     }
   };
+
+  // =========================================================================
+  // 🌟 จุดสำคัญ: กรองข้อมูลก่อนนำไปแสดงผล (ซ่อนงานที่หมดเวลา + แยกหมวดหมู่)
+  // =========================================================================
+  const validTasks = tasks.filter(t => 
+    t.OrderType === activeCategory && // ต้องตรงกับหมวดหมู่ที่กด (ฝาก/ถอน)
+    t.Username !== myUsername &&      // ต้องไม่ใช่งานของตัวเอง
+    (t.localExpireTimestamp - currentTime.getTime() > 0) // 🌟 เวลาที่เหลือต้องมากกว่า 0 (ถ้าหมดเวลาให้ซ่อนทันที)
+  );
 
   return (
     <div style={{ padding: '20px 15px', paddingBottom: '90px', fontFamily: "'Prompt', sans-serif", background: '#0B0E14', minHeight: '100vh', color: '#fff' }}>
@@ -173,8 +181,8 @@ export default function Market() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: '#64748B' }}>กำลังโหลด...</div>
-        ) : tasks.filter(t => t.OrderType === activeCategory && t.Username !== myUsername).length > 0 ? (
-            tasks.filter(t => t.OrderType === activeCategory && t.Username !== myUsername).map(task => (
+        ) : validTasks.length > 0 ? (
+            validTasks.map(task => (
             <div key={task.Id} style={{ background: 'linear-gradient(180deg, #1A1F2B 0%, #12161F 100%)', borderRadius: '16px', padding: '18px', border: '1px solid rgba(59, 130, 246, 0.15)', position: 'relative', overflow: 'hidden' }}>
               
               <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 70%)', borderRadius: '50%' }}></div>
