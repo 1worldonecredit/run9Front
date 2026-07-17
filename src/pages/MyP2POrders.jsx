@@ -19,11 +19,13 @@ export default function MyP2POrders() {
       .then(res => res.json())
       .then(data => {
         if (data.success) {
+          // 🌟 1. ดึงตั้งค่าเวลาจาก Database (ถ้า Backend ไม่ส่งมาใช้ 1800 วินาทีแทน)
+          const apiTimeout = data.timeoutSetting || 1800;
+
           // 🌟 รับค่า ElapsedSeconds มาแปลงเป็นเวลาหมดอายุ
           const processedOrders = data.orders.map(o => ({
             ...o,
-            // 300 วินาที = 5 นาที (แก้ตัวเลขตรงนี้ได้ถ้าต้องการเปลี่ยนเวลา)
-            localExpireTimestamp: Date.now() + ((2000 - (o.ElapsedSeconds || 0)) * 1000)
+            localExpireTimestamp: Date.now() + ((apiTimeout - (o.ElapsedSeconds || 0)) * 1000)
           }));
           setOrders(processedOrders);
         }
@@ -84,6 +86,16 @@ export default function MyP2POrders() {
     }
   };
 
+  // =========================================================================
+  // 🌟 2. จุดสำคัญ: กรองข้อมูลก่อนนำไปแสดงผล (ซ่อนเฉพาะรายการ PENDING ที่หมดเวลา)
+  // =========================================================================
+  const validOrders = orders.filter(order => {
+    if (order.Status === 'PENDING') {
+      return (order.localExpireTimestamp - currentTime.getTime()) > 0;
+    }
+    return true; // ถ้าเป็นสถานะอื่น (MATCHED, COMPLETED) ให้แสดงประวัติต่อไป
+  });
+
   return (
     <div style={{ padding: '20px 15px', paddingBottom: '90px', fontFamily: "'Prompt', sans-serif", background: '#0B0E14', minHeight: '100vh', color: '#fff' }}>
       
@@ -96,9 +108,9 @@ export default function MyP2POrders() {
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#94A3B8' }}>กำลังโหลดข้อมูล...</div>
-      ) : orders.length > 0 ? (
+      ) : validOrders.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          {orders.map(order => {
+          {validOrders.map(order => {
             
             const myName = String(myUsername || '').trim().toLowerCase();
             const creatorName = String(order.Username || order.RequesterUsername || '').trim().toLowerCase();

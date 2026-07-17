@@ -14,7 +14,7 @@ export default function P2POrderDetail() {
   // State สำหรับฟอร์มโอนเงิน
   const [confirmCodeInput, setConfirmCodeInput] = useState('');
   const [transferAmount, setTransferAmount] = useState('');
-  const [transferDate, setTransferDate] = useState('');
+  const [transferDate, setTransferDate] = useState(defaultDate);
   const [transferTime, setTransferTime] = useState('');
   const [slipImage, setSlipImage] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
