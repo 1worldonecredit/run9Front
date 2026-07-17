@@ -25,6 +25,8 @@ import Team from './pages/Team';
 import TopUpMoney from './pages/TopUpMoney';
 import P2POrderDetail from './pages/P2POrderDetail';
 import MyP2POrders from './pages/MyP2POrders';
+import History from './pages/History'; 
+import ProfileMyTeam from './pages/ProfileMyTeam';
 
 
 function App() {
@@ -113,6 +115,8 @@ function App() {
              <Route element={<P2POrderDetail />} path="/p2p-order/:id" />
              <Route element={<MyP2POrders />} path="/my-p2p-orders" />
              <Route element={<MyP2POrders />} path="/my-p2p-orders" />
+             <Route path="/history" element={<History />} />
+            <Route path="/profile-my-team/:username" element={<ProfileMyTeam />} />
 
           </Route>
             <Route path="/prelogin" element={<Prelogin/>} />
