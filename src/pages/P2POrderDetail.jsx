@@ -237,7 +237,7 @@ export default function P2POrderDetail() {
                   <label htmlFor="slipUpload" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '12px', background: 'rgba(59, 130, 246, 0.1)', border: '1px dashed #3B82F6', borderRadius: '8px', color: '#3B82F6', cursor: 'pointer', marginBottom: '15px', transition: '0.3s' }}>
                     <ImageIcon size={18} /> {slipImage ? 'เปลี่ยนรูปสลิป' : 'อัปโหลดสลิปโอนเงิน'}
                   </label>
-                  {slipImage && <img src={slipImage} alt="Slip" style={{ width: '100%', borderRadius: '8px', marginBottom: '15px' }} />}
+                  {slipImage && <img src={slipImage} alt="Slip" style={{ width: '100%', maxWidth: '400px', maxHeight: '500px', objectFit: 'contain', display: 'block', margin: '0 auto 15px auto', borderRadius: '8px' }} />}
                   
                   <button onClick={handleUploadSlip} disabled={isProcessing} style={{ width: '100%', padding: '14px', background: '#3B82F6', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: isProcessing ? 'not-allowed' : 'pointer', opacity: isProcessing ? 0.7 : 1 }}>
                     {isProcessing ? 'กำลังส่งข้อมูล...' : 'ยืนยันการโอนเงิน (ส่งสลิป)'}
