@@ -18,7 +18,7 @@ export default function Team() {
 
 
   // รูปปกพื้นหลัง (ตั้งค่ารูปเริ่มต้นที่ดูหรูหราไว้ก่อน)
-  const [coverImage, setCoverImage] = useState('https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80');
+  const [coverImage, setCoverImage] = useState('/BG2.jpg');
   const [teamMembers, setTeamMembers] = useState([]);
 
   useEffect(() => {
