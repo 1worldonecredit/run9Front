@@ -23,7 +23,7 @@ export default function MyP2POrders() {
           const processedOrders = data.orders.map(o => ({
             ...o,
             // 300 วินาที = 5 นาที (แก้ตัวเลขตรงนี้ได้ถ้าต้องการเปลี่ยนเวลา)
-            localExpireTimestamp: Date.now() + ((300 - (o.ElapsedSeconds || 0)) * 1000)
+            localExpireTimestamp: Date.now() + ((1200 - (o.ElapsedSeconds || 0)) * 1000)
           }));
           setOrders(processedOrders);
         }
