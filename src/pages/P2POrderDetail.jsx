@@ -11,12 +11,16 @@ export default function P2POrderDetail() {
   const [myUsername, setMyUsername] = useState('');
   const [currency, setCurrency] = useState('LAK'); 
 
-  // State สำหรับฟอร์มโอนเงิน
+  // 🌟 ประกาศตัวแปร now ก่อนนำไปใช้งาน (แก้ปัญหาจอดำ)
+  const now = new Date();
   const defaultDate = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+  const defaultTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+  // State สำหรับฟอร์มโอนเงิน
   const [confirmCodeInput, setConfirmCodeInput] = useState('');
   const [transferAmount, setTransferAmount] = useState('');
-  const [transferDate, setTransferDate] = useState(defaultDate);
-  const [transferTime, setTransferTime] = useState('');
+  const [transferDate, setTransferDate] = useState(defaultDate); // ดึงวันที่ปัจจุบัน
+  const [transferTime, setTransferTime] = useState(defaultTime); // ดึงเวลาปัจจุบัน
   const [slipImage, setSlipImage] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
