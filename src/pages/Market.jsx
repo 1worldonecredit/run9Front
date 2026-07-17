@@ -46,9 +46,9 @@ export default function Market() {
       const data = await response.json();
       
       if (data.success) {
-        // 🌟 ดึงตั้งค่าเวลา (timeoutSetting) จากศูนย์กลาง (Backend) มาใช้งาน
-        // ถ้า Backend ไม่ได้ส่งมา ให้ใช้ค่ามาตรฐานคือ 300 วินาที
-        const apiTimeout = data.timeoutSetting || 300; 
+        // 🌟 รับค่าเวลาจาก Database ผ่าน Backend
+        // ถ้า Backend ไม่ได้ส่งมา ให้ใช้ค่ามาตรฐาน (Fallback) เป็น 30 นาที (1800 วินาที)
+        const apiTimeout = data.timeoutSetting || 1800; 
 
         // 🌟 คำนวณเวลาหมดอายุให้แต่ละออเดอร์
         const processedTasks = data.orders.map(o => ({
