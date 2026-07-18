@@ -13,16 +13,16 @@ export default function Promo() {
   const content = {
     TH: {
       title: "โอกาสเปลี่ยนชีวิตมาถึงแล้ว!",
-      subtitle: "เกมสอยดาวพารวย 🌟",
-      description: "ลงทะเบียนวันนี้ รับสิทธิ์สอยดาว ฟรี! ทุกวัน ตลอด 1 เดือนเต็ม ลุ้นรับเงินรางวัลแจ็คพ็อตมากมายตั้งแต่ 500,000 กีบ จนถึง 40,000,000 กีบ!",
+      subtitle: "เกม ไขกล่องสมบัติ 🌟",
+      description: "ลงทะเบียนฟรี โชคดี รับเงินจริงวันนี้รับสิทธิ์ 2 สิทธิ์ ฟรี! ทุกวัน ตลอด 1 เดือนเต็ม ลุ้นรับเงินรางวัลแจ็คพ็อตมากมายตั้งแต่ 500,000 กีบ จนถึง 40,000,000 กีบ!",
       cta: "ลงทะเบียนรับสิทธิ์ฟรีเลย!",
-      login: "มีบัญชีอยู่แล้ว? เข้าสู่ระบบ",
+      login: "มีบัญชีอยู่แล้ว? เข้าสู่ระบบ แล้วแชร์ ก็ได้แล่นฟรี ",
       invitedBy: "คุณได้รับคำเชิญพิเศษจาก:"
     },
     LA: {
       title: "ໂອກາດປ່ຽນຊີວິດມາເຖິງແລ້ວ!",
-      subtitle: "ເກມສອຍດາວພາດີ 🌟",
-      description: "ລົງທະບຽນມື້ນີ້ ຮັບສິດສອຍດາວ ຟຣີ! ທຸກມື້ ຕະຫຼອດ 1 ເດືອນເຕັມ ລຸ້ນຮັບເງິນລາງວັນແຈັກພອດຫຼວງຫຼາຍຕັ້ງແຕ່ 500,000 ກີບ ຈົນເຖິງ 40,000,000 ກີບ!",
+      subtitle: "ເກມປິດສະໜາກ່ອງສົມບັດ 🌟",
+      description: "ລົງທະບຽນຟຣີ ແລະ ລອງສ່ຽງໂຊກເພື່ອລຸ້ນຮັບເງິນສົດແທ້! ຮັບສິດທິພິເສດຫຼິ້ນຟຣີ 2 ຄັ້ງຕໍ່ມື້ ຕະຫຼອດໄລຍະເວລາໜຶ່ງເດືອນເຕັມ ພ້ອມໂອກາດລຸ້ນຮັບລາງວັນໃຫຍ່ (Jackpot) ມູນຄ່າຕັ້ງແຕ່ 500,000 ກີບ ໄປຈົນເຖິງ 40,000,000 ກີບ!",
       cta: "ລົງທະບຽນຮັບສິດຟຣີເລີຍ!",
       login: "ມີບັນຊີແລ້ວບໍ? ເຂົ້າສູ່ລະບົບ",
       invitedBy: "ທ່ານໄດ້ຮັບຄຳເຊີນພິເສດຈາກ:"
@@ -69,10 +69,10 @@ export default function Promo() {
 
         {/* ข้อความโฆษณา */}
         <div style={{ marginTop: 'auto', marginBottom: 'auto', textAlign: 'center' }}>
-          <h1 style={{ color: '#FFD700', fontSize: '2.5rem', marginBottom: '10px', textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+          <h1 style={{ color: '#FFD700', fontSize: '2.0rem', marginBottom: '10px', textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
             {content[lang].title}
           </h1>
-          <h2 style={{ fontSize: '1.8rem', marginBottom: '20px' }}>{content[lang].subtitle}</h2>
+          <h2 style={{ fontSize: '1.4rem', marginBottom: '20px' }}>{content[lang].subtitle}</h2>
           
           <p style={{ fontSize: '1.1rem', lineHeight: '1.6', marginBottom: '40px', background: 'rgba(0,0,0,0.6)', padding: '20px', borderRadius: '12px', border: '1px solid #D4AF37' }}>
             {content[lang].description}
