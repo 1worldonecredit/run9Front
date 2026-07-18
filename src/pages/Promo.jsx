@@ -69,7 +69,7 @@ export default function Promo() {
 
         {/* ข้อความโฆษณา */}
         <div style={{ marginTop: 'auto', marginBottom: 'auto', textAlign: 'center' }}>
-          <h1 style={{ color: '#FFD700', fontSize: '2.0rem', marginBottom: '10px', textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+          <h1 style={{ color: '#FFD700', fontSize: '1.7rem', marginBottom: '10px', textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
             {content[lang].title}
           </h1>
           <h2 style={{ fontSize: '1.4rem', marginBottom: '20px' }}>{content[lang].subtitle}</h2>
