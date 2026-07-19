@@ -275,7 +275,7 @@ export default function Chat() {
       /* ดึงให้เต็มกรอบหน้าจอ โดยชดเชย padding ของ Layout */
       margin: '-20px', 
       /* ล็อกความสูงให้พอดีหน้าจอ (หักพื้นที่ TopNav และ BottomNav ออก) */
-      height: 'calc(100vh - 150px)', 
+      height: 'calc(100vh - 170px)', 
       background: '#0B0E14' 
     }}>
       
