@@ -1,128 +1,92 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone, Video, Image as ImageIcon, Send, Paperclip } from 'lucide-react';
-import { io } from 'socket.io-client'; // 🌟 1. นำเข้า Socket.IO Client
-
-// 🌟 2. ตั้งค่าการเชื่อมต่อไปที่ Backend (ถ้าคุณใช้ Railway ให้เปลี่ยนเป็น URL ของ Railway ได้เลยครับ)
-// ตรงนี้ผมใส่ http://localhost:5100 เผื่อไว้ให้คุณทดสอบในคอมก่อน
-const SOCKET_URL = process.env.NODE_ENV === 'development' ? 'http://localhost:5100' : 'https://api.run9.app'; 
+import { ArrowLeft, Send, Paperclip, MoreVertical, UserPlus, Search, Ban, Bell, CheckCircle2 } from 'lucide-react';
+// import { io } from 'socket.io-client';
 
 export default function Chat() {
-  const { username } = useParams(); // ชื่อเพื่อนที่เราจะคุยด้วย
+  const { username } = useParams(); // ชื่อคนที่เรากำลังเปิดแชทด้วย
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
   
   const [loading, setLoading] = useState(true);
-  const [myUsername, setMyUsername] = useState('');
+  const [myUsername, setMyUsername] = useState('me'); 
   const [partnerInfo, setPartnerInfo] = useState({ username: username, profileImageUrl: '', isOnline: true });
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   
-  // State สำหรับเก็บ Socket และชื่อห้อง
-  const [socket, setSocket] = useState(null);
-  const [room, setRoom] = useState('');
+  // 🌟 State สำหรับระบบเพื่อนและการค้นหา
+  const [isFriend, setIsFriend] = useState(false); // เช็คว่าเป็นเพื่อนกันหรือยัง
+  const [unreadCount, setUnreadCount] = useState(2); // แจ้งเตือนข้อความใหม่ (Mock)
+  const [showMenu, setShowMenu] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchUsername, setSearchUsername] = useState('');
 
-  // 🌟 3. จัดการเชื่อมต่อ Socket เมื่อเปิดหน้าแชท
   useEffect(() => {
-    // 3.1 ดึงชื่อ Username ของตัวเองจาก LocalStorage
-    const savedProfileStr = localStorage.getItem('userProfile');
-    let me = '';
-    if (savedProfileStr) {
-      try {
-        const parsed = JSON.parse(savedProfileStr);
-        me = parsed.username || '';
-        setMyUsername(me);
-      } catch (e) {}
-    }
-
-    if (!me) {
-        alert("กรุณาเข้าสู่ระบบก่อนใช้งานแชท");
-        return;
-    }
-
-    // 3.2 สร้างชื่อห้องแชท (นำชื่อ 2 คนมาเรียงตาม A-Z เพื่อให้ได้ชื่อห้องตรงกันเสมอ)
-    const chatRoom = [me, username].sort().join('_');
-    setRoom(chatRoom);
-
-    // 3.3 สร้างการเชื่อมต่อ Socket ไปที่ Backend
-    const newSocket = io(SOCKET_URL);
-    setSocket(newSocket);
-
-    // 3.4 แจ้ง Backend ว่าขอเข้าร่วมห้องแชทนี้
-    newSocket.emit('join_room', chatRoom);
-
-    // 3.5 ดักฟังข้อความใหม่จากเพื่อน (เมื่อมีคนส่งมา จะทำงานตรงนี้)
-    newSocket.on('receive_message', (data) => {
-      setMessages((prevMessages) => [...prevMessages, data]);
-    });
-
-    // (จำลองดึงโปรไฟล์เพื่อน - อนาคตสามารถยิง API ไปดึงรูปจริงได้)
+    // 🌟 จำลองการดึงข้อมูล (คุณต้องไป Fetch API จากตาราง ChatFriends เพื่อเช็ค)
     setPartnerInfo({
       username: username,
       profileImageUrl: `https://ui-avatars.com/api/?name=${username}&background=random&color=fff`,
       isOnline: true
     });
+
+    // สมมติว่าดึง API มาแล้วพบว่า "ยังไม่เป็นเพื่อนกัน"
+    setIsFriend(false); 
+
+    setMessages([
+      { id: 1, sender: username, text: 'สวัสดีครับ สนใจเข้าร่วมทีมครับ', timestamp: new Date(Date.now() - 3600000) }
+    ]);
     
     setLoading(false);
-
-    // 3.6 ตัดการเชื่อมต่อเมื่อกดปุ่มกลับ หรือปิดหน้าแชท
-    return () => {
-      newSocket.disconnect();
-    };
   }, [username]);
 
-  // เลื่อนหน้าจอลงมาล่างสุดเสมอเมื่อมีข้อความใหม่
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // 🌟 4. ฟังก์ชันส่งข้อความ
-  const handleSendMessage = (e) => {
+  // 🌟 ฟังก์ชันส่งข้อความ (บันทึกลง Database ทันที)
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!inputText.trim() || !socket) return;
+    if (!inputText.trim() || !isFriend) return;
 
-    // เตรียมก้อนข้อมูลข้อความ
-    const messageData = {
+    const newMessage = {
       id: Date.now(),
-      room: room, // ส่งชื่อห้องไปด้วย Backend จะได้ส่งถูกห้อง
-      sender: myUsername, // คนส่งคือเราเอง
+      sender: myUsername,
       text: inputText,
       timestamp: new Date()
     };
 
-    // 1. อัปเดตข้อความขึ้นหน้าจอตัวเองทันที
-    setMessages((prev) => [...prev, messageData]);
-    
-    // 2. ยิงข้อมูลผ่านท่อ Socket ไปให้เพื่อน
-    socket.emit('send_message', messageData);
-    
-    // 3. ล้างช่องพิมพ์ข้อความ
+    // 1. โชว์ขึ้นจอตัวเองก่อนเพื่อความรวดเร็ว
+    setMessages([...messages, newMessage]);
     setInputText('');
-  };
 
-  // 🌟 ฟังก์ชันส่งรูปภาพ (เบื้องต้น)
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file && socket) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const messageData = {
-          id: Date.now(),
-          room: room,
+    /* 🌟 2. ส่งไปบันทึกลง Database และส่งผ่าน Socket
+    try {
+      // ส่งผ่าน Socket ให้เพื่อนเห็นทันที
+      socket.emit('send_message', newMessage);
+
+      // ยิง API บันทึกลงตาราง ChatMessages ทันที
+      await fetch('https://api.run9.app/api/chat/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          room: 'room_name',
           sender: myUsername,
-          imageUrl: reader.result, // ส่งเป็น Base64
-          timestamp: new Date()
-        };
-        
-        setMessages((prev) => [...prev, messageData]);
-        socket.emit('send_message', messageData);
-      };
-      reader.readAsDataURL(file);
+          text: inputText
+        })
+      });
+    } catch(err) {
+      console.error("Save message error", err);
     }
+    */
   };
 
-  const handleCall = (type) => {
-    alert(`กำลังพัฒนาระบบ ${type} Call 📞\n(เตรียมเชื่อมต่อ WebRTC ในอนาคต)`);
+  // 🌟 ฟังก์ชันขอเพิ่มเพื่อนด้วย Username
+  const handleAddFriend = () => {
+    if(!searchUsername.trim()) return;
+    alert(`ส่งคำขอเพิ่มเพื่อนไปยัง Username: ${searchUsername} เรียบร้อยแล้ว`);
+    setShowSearchModal(false);
+    setSearchUsername('');
+    // TODO: Fetch API INSERT ลงตาราง ChatFriends
   };
 
   const formatTime = (date) => {
@@ -132,100 +96,126 @@ export default function Chat() {
   if (loading) return <div style={{ textAlign: 'center', padding: '50px', color: '#fff', background: '#0B0E14', minHeight: '100vh' }}>กำลังโหลด...</div>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#0B0E14', color: '#fff', fontFamily: "'Prompt', sans-serif" }}>
-      
-      {/* Header Bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 20px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', position: 'sticky', top: 0, zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}>
-            <ArrowLeft size={24} />
-          </button>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ position: 'relative' }}>
+    <div className="chat-wrapper">
+      <div className="chat-page">
+        
+        {/* 🌟 Top Navbar (มีแจ้งเตือนและเมนูเพื่อน) */}
+        <div className="chat-navbar">
+          <div className="chat-nav-left">
+            <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}>
+              <ArrowLeft size={24} />
+            </button>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <img src={partnerInfo.profileImageUrl} alt="profile" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
-              {partnerInfo.isOnline && (
-                <div style={{ position: 'absolute', bottom: 0, right: 0, width: '12px', height: '12px', background: '#10B981', border: '2px solid #0B0E14', borderRadius: '50%' }}></div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1rem', color: '#fff' }}>{partnerInfo.username}</h3>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: partnerInfo.isOnline ? '#10B981' : '#64748B' }}>
+                  {partnerInfo.isOnline ? 'ออนไลน์' : 'ออฟไลน์'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="chat-nav-right">
+            {/* 🌟 ไอคอนแจ้งเตือนข้อความ (โชว์ตัวเลขสีแดง) */}
+            <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => alert('ไปหน้าแชทรวม')}>
+              <Bell size={22} color="#CFA348" />
+              {unreadCount > 0 && (
+                <div style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#EF4444', color: '#fff', fontSize: '0.6rem', width: '16px', height: '16px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>
+                  {unreadCount}
+                </div>
               )}
             </div>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1rem', color: '#fff' }}>{partnerInfo.username}</h3>
-              <p style={{ margin: 0, fontSize: '0.75rem', color: partnerInfo.isOnline ? '#10B981' : '#64748B' }}>
-                {partnerInfo.isOnline ? 'ออนไลน์' : 'ออฟไลน์'}
-              </p>
-            </div>
+
+            <button onClick={() => setShowMenu(!showMenu)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}>
+              <MoreVertical size={24} />
+            </button>
+
+            {/* Dropdown Menu */}
+            {showMenu && (
+              <div style={{ position: 'absolute', top: '40px', right: '0', background: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '10px 0', width: '180px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
+                <button style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 15px', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }} onClick={() => { setShowSearchModal(true); setShowMenu(false); }}>
+                  <Search size={16} color="#94A3B8" /> ค้นหา Username
+                </button>
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', margin: '5px 0' }}></div>
+                <button style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 15px', background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }} onClick={() => { alert('บล็อกผู้ใช้นี้เรียบร้อย'); setShowMenu(false); }}>
+                  <Ban size={16} color="#EF4444" /> บล็อกผู้ใช้นี้
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '15px' }}>
-          <button onClick={() => handleCall('Voice')} style={{ background: 'none', border: 'none', color: '#CFA348', cursor: 'pointer' }}>
-            <Phone size={22} />
-          </button>
-          <button onClick={() => handleCall('Video')} style={{ background: 'none', border: 'none', color: '#CFA348', cursor: 'pointer' }}>
-            <Video size={24} />
-          </button>
+        {/* 🌟 Chat Messages */}
+        <div className="chat-messages">
+          {messages.map((msg) => (
+            <div key={msg.id} className={`msg-wrapper ${msg.sender === myUsername ? 'items-end' : 'items-start'}`}>
+              <div className={`msg-bubble ${msg.sender === myUsername ? 'msg-me' : 'msg-partner'}`}>
+                {msg.text}
+              </div>
+              <span style={{ fontSize: '0.7rem', color: '#64748B', padding: '0 5px' }}>{formatTime(msg.timestamp)}</span>
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
         </div>
-      </div>
 
-      {/* Chat Messages Area */}
-      <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        
-        {messages.length === 0 && (
-          <div style={{ textAlign: 'center', color: '#64748B', marginTop: '20px', fontSize: '0.85rem' }}>
-            นี่คือจุดเริ่มต้นของการสนทนากับ {partnerInfo.username}
+        {/* 🌟 Input Area (เช็คสถานะความเป็นเพื่อน) */}
+        <div className="chat-input-area">
+          {isFriend ? (
+            <form onSubmit={handleSendMessage} className="chat-form">
+              <input type="file" id="chatUpload" style={{ display: 'none' }} />
+              <label htmlFor="chatUpload" style={{ color: '#94A3B8', cursor: 'pointer', padding: '5px' }}>
+                <Paperclip size={20} />
+              </label>
+              <input 
+                type="text" 
+                placeholder="พิมพ์ข้อความ..." 
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                style={{ flex: 1, background: 'transparent', border: 'none', color: '#fff', outline: 'none', fontSize: '0.95rem', padding: '5px' }}
+              />
+              <button type="submit" disabled={!inputText.trim()} style={{ background: inputText.trim() ? '#CFA348' : 'rgba(255,255,255,0.1)', color: inputText.trim() ? '#000' : '#64748B', border: 'none', width: '38px', height: '38px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: inputText.trim() ? 'pointer' : 'not-allowed', transition: '0.3s' }}>
+                <Send size={18} style={{ marginLeft: '2px' }} />
+              </button>
+            </form>
+          ) : (
+            <div className="not-friend-alert">
+              <UserPlus size={30} color="#CFA348" style={{ margin: '0 auto 10px auto' }} />
+              <p style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: '#fff' }}>ต้องเป็นเพื่อนกันก่อนถึงจะพูดคุยได้</p>
+              <button onClick={() => setIsFriend(true)} style={{ background: '#CFA348', color: '#000', border: 'none', padding: '10px 20px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', width: '100%' }}>
+                ส่งคำขอเป็นเพื่อน
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* 🌟 Modal ค้นหาเพื่อนด้วย Username */}
+        {showSearchModal && (
+          <div className="chat-modal-overlay">
+            <div className="chat-modal-box">
+              <h3 style={{ margin: '0 0 15px 0', color: '#CFA348', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <Search size={20} /> ค้นหาเพื่อน
+              </h3>
+              <p style={{ fontSize: '0.8rem', color: '#94A3B8', marginBottom: '15px' }}>เพิ่มเพื่อนด้วย Username เพื่อความเป็นส่วนตัว</p>
+              
+              <input 
+                type="text" 
+                placeholder="กรอก Username..." 
+                value={searchUsername}
+                onChange={(e) => setSearchUsername(e.target.value)}
+                style={{ width: '100%', boxSizing: 'border-box', padding: '12px', borderRadius: '10px', border: '1px solid rgba(207, 163, 72, 0.3)', background: 'rgba(0,0,0,0.3)', color: '#fff', marginBottom: '20px', outline: 'none' }}
+              />
+              
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => setShowSearchModal(false)} style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>ยกเลิก</button>
+                <button onClick={handleAddFriend} style={{ flex: 1, padding: '10px', background: '#CFA348', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>เพิ่มเพื่อน</button>
+              </div>
+            </div>
           </div>
         )}
 
-        {messages.map((msg) => {
-          // 🌟 เช็คว่าใครเป็นคนส่ง ถ้า sender ตรงกับ myUsername แสดงว่าเราพิมพ์เอง
-          const isMe = msg.sender === myUsername;
-          return (
-            <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
-              
-              <div style={{ 
-                maxWidth: '75%', 
-                padding: msg.imageUrl ? '5px' : '12px 16px', 
-                background: msg.imageUrl ? 'none' : (isMe ? 'linear-gradient(135deg, #CFA348 0%, #B8860B 100%)' : '#1E293B'), 
-                color: isMe ? '#000' : '#fff', 
-                borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
-              }}>
-                {msg.imageUrl ? (
-                  <img src={msg.imageUrl} alt="attachment" style={{ maxWidth: '100%', borderRadius: '12px', border: `2px solid ${isMe ? '#CFA348' : '#1E293B'}` }} />
-                ) : (
-                  <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: '1.4', fontWeight: isMe ? '500' : 'normal' }}>{msg.text}</p>
-                )}
-              </div>
-              <span style={{ fontSize: '0.7rem', color: '#64748B', marginTop: '5px', padding: '0 5px' }}>{formatTime(msg.timestamp)}</span>
-            </div>
-          );
-        })}
-        <div ref={messagesEndRef} />
       </div>
-
-      {/* Input Area */}
-      <div style={{ padding: '15px 20px', background: 'rgba(255,255,255,0.03)', borderTop: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)' }}>
-        <form onSubmit={handleSendMessage} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.3)', padding: '8px 15px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.1)' }}>
-          
-          <input type="file" accept="image/*" id="chatImageUpload" style={{ display: 'none' }} onChange={handleImageUpload} />
-          <label htmlFor="chatImageUpload" style={{ color: '#94A3B8', cursor: 'pointer', padding: '5px' }}>
-            <Paperclip size={20} />
-          </label>
-
-          <input 
-            type="text" 
-            placeholder="พิมพ์ข้อความ..." 
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            style={{ flex: 1, background: 'transparent', border: 'none', color: '#fff', outline: 'none', fontSize: '0.95rem', padding: '5px' }}
-          />
-
-          <button type="submit" disabled={!inputText.trim()} style={{ background: inputText.trim() ? '#CFA348' : 'rgba(255,255,255,0.1)', color: inputText.trim() ? '#000' : '#64748B', border: 'none', width: '38px', height: '38px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: inputText.trim() ? 'pointer' : 'not-allowed', transition: '0.3s' }}>
-            <Send size={18} style={{ marginLeft: '2px' }} />
-          </button>
-        </form>
-      </div>
-
     </div>
   );
 }
