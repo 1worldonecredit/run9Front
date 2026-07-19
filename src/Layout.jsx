@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
-import { Gamepad, ShoppingCart, Bell, Home, Briefcase, TrendingUp, MessageCircle, Users, Menu, X, LogOut,useState, useEffect } from 'lucide-react';
+import { Gamepad, ShoppingCart, Bell, Home, Briefcase, TrendingUp, MessageCircle, Users, Menu, X, LogOut } from 'lucide-react';
 import './layout.css'; 
 
 export default function Layout({ userProfile }) {
@@ -120,8 +120,22 @@ export default function Layout({ userProfile }) {
               key={item.path} 
               to={item.path} 
               className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} /* 🌟 จัด layout */
             >
-              {item.icon} <span>{item.label}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {item.icon} <span>{item.label}</span>
+              </div>
+
+              {/* 🌟 เพิ่มแจ้งเตือนแชทสำหรับ Sidebar คอมพิวเตอร์ */}
+              {item.label === 'Chat' && totalUnread > 0 && (
+                <div style={{
+                  background: '#EF4444', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', 
+                  width: '20px', height: '20px', borderRadius: '50%', 
+                  display: 'flex', justifyContent: 'center', alignItems: 'center'
+                }}>
+                  {totalUnread > 99 ? '99+' : totalUnread}
+                </div>
+              )}
             </Link>
           ))}
           
@@ -195,9 +209,22 @@ export default function Layout({ userProfile }) {
                 key={item.path} 
                 to={item.path} 
                 className={`bottom-nav-item ${location.pathname === item.path ? 'active' : ''}`}
+                style={{ position: 'relative' }} /* 🌟 1. เพิ่ม relative ตรงนี้เพื่อให้จุดแดงลอยอยู่บนไอคอนได้ */
               >
                 {React.cloneElement(item.icon, { color: location.pathname === item.path ? item.icon.props.color : '#6C7280' })}
                 <span>{item.label}</span>
+
+                {/* 🌟 2. เพิ่มเงื่อนไข: ถ้าเป็นปุ่ม Chat และมีข้อความเข้า ให้แสดงจุดแดง */}
+                {item.label === 'Chat' && totalUnread > 0 && (
+                  <div style={{
+                    position: 'absolute', top: '2px', right: '15px', 
+                    background: '#EF4444', color: '#fff', fontSize: '0.65rem', fontWeight: 'bold', 
+                    width: '18px', height: '18px', borderRadius: '50%', 
+                    display: 'flex', justifyContent: 'center', alignItems: 'center'
+                  }}>
+                    {totalUnread > 99 ? '99+' : totalUnread} {/* ถ้าเกิน 99 ให้โชว์ 99+ */}
+                  </div>
+                )}
               </Link>
             ))}
           </div>
