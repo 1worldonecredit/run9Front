@@ -224,6 +224,17 @@ export default function Chat() {
 
   if (loading) return <div style={{ textAlign: 'center', padding: '50px', color: '#fff', background: '#0B0E14', minHeight: '100vh' }}>กำลังโหลด...</div>;
 
+// 🌟 ฟังก์ชันพิเศษ: สั่งเคลียร์แจ้งเตือนทุกครั้งที่เปิดห้องแชท หรือมีข้อความใหม่เด้งเข้ามาในห้องนี้
+  useEffect(() => {
+    if (room && myUsername && messages.length > 0) {
+      fetch(`${API_URL}/api/chat/mark-read`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ room: room, me: myUsername })
+      }).catch(err => console.error("Auto mark-read error", err));
+    }
+  }, [messages.length, room, myUsername]); // ทำงานเมื่อจำนวนข้อความเปลี่ยนไป (เวลามีคนพิมพ์มาใหม่)
+
   return (
     <div className="chat-wrapper">
       <div className="chat-page">
