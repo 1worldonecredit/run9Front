@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Paperclip, MoreVertical, UserPlus, Search, Ban, Bell, Phone, Video, Trash2 } from 'lucide-react';
+import { ArrowLeft, Send, Paperclip, MoreVertical, UserPlus, Search, Ban, Bell, Phone, Video, Trash2, Download, X } from 'lucide-react';
 import { io } from 'socket.io-client';
 
 // 🌟 ตั้งค่า URL ของ API และ Socket (เปลี่ยนเป็น localhost:5100 ได้ถ้ากำลังทดสอบในคอม)
@@ -11,7 +11,8 @@ export default function Chat() {
   const { username } = useParams(); // ชื่อคนที่เรากำลังเปิดแชทด้วย
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
-  
+  // 🌟 2. เพิ่ม State สำหรับเก็บรูปที่ต้องการขยายดู
+  const [selectedImage, setSelectedImage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [myUsername, setMyUsername] = useState(''); 
   const [partnerInfo, setPartnerInfo] = useState({ username: username, profileImageUrl: '', isOnline: true });
@@ -211,46 +212,40 @@ const compressImage = (file) => {
     } catch(err) { console.error("Save msg error", err); }
   };
 
-  // 🌟 ฟังก์ชันส่งรูปภาพ (บีบอัดก่อนส่ง)
+  // 🌟 ฟังก์ชันส่งรูปภาพ (รองรับทีละหลายรูป)
   const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (file && isFriend) {
+    // ดึงไฟล์ทั้งหมดที่ผู้ใช้เลือก (หลายไฟล์ได้)
+    const files = Array.from(e.target.files);
+    if (!files.length || !isFriend) return;
+
+    for (let i = 0; i < files.length; i++) {
       try {
-        // 1. รอให้ฟังก์ชันบีบอัดรูปทำงานให้เสร็จ
-        const compressedBase64 = await compressImage(file);
-        
+        const compressedBase64 = await compressImage(files[i]);
         const newMessage = {
-          id: Date.now(),
+          id: Date.now() + i, // ป้องกัน ID ซ้ำเวลากดส่งรัวๆ
           room: room,
           sender: myUsername,
           text: null,
-          imageUrl: compressedBase64, // ใช้รูปที่บีบอัดแล้ว
+          imageUrl: compressedBase64,
           timestamp: new Date(),
           isDeleted: false,
           isRead: false
         };
         
-        // 2. แสดงบนหน้าจอตัวเองทันที
         setMessages((prev) => [...prev, newMessage]);
-        
-        // 3. ส่งผ่าน Socket ให้เพื่อนเด้งทันที
         socket?.emit('send_message', newMessage);
 
-        // 4. บันทึกลง Database
         await fetch(`${API_URL}/api/chat/save`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newMessage)
         });
-
       } catch(err) { 
-        console.error("Upload/Compress error:", err); 
-        alert("เกิดข้อผิดพลาดในการประมวลผลรูปภาพ");
+        console.error("Upload error:", err); 
       }
     }
     
-    // เคลียร์ค่า input file เพื่อให้กดส่งรูปเดิมซ้ำได้ในครั้งต่อไป
-    e.target.value = null; 
+    e.target.value = null; // เคลียร์ค่า input
   };
 
   // 🌟 ฟังก์ชันขอลบข้อความ (Soft Delete)
@@ -320,8 +315,7 @@ const compressImage = (file) => {
   if (loading) return <div style={{ textAlign: 'center', padding: '50px', color: '#fff', background: '#0B0E14', minHeight: '100vh' }}>กำลังโหลด...</div>;
 
 
-
-  return (
+return (
     <div style={{ 
       display: 'flex', 
       flexDirection: 'column', 
@@ -366,7 +360,6 @@ const compressImage = (file) => {
         </div>
 
         <div className="chat-nav-right" style={{ position: 'relative', display: 'flex', gap: '15px', alignItems: 'center' }}>
-          {/* ส่วนเมนู 3 จุด ค้นหา/บล็อก ของคุณใส่ตรงนี้ได้เลย (ผมดึงโค้ดเปิดปิดเมนูมาให้ด้วยครับ) */}
           <button onClick={() => setShowMenu(!showMenu)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}>
             <MoreVertical size={24} />
           </button>
@@ -385,15 +378,15 @@ const compressImage = (file) => {
         </div>
       </div>
 
-      {/* 🌟 2. พื้นที่ข้อความ (เลื่อนได้เฉพาะตรงนี้!) */}
+      {/* 🌟 2. พื้นที่ข้อความ (จัดกลุ่มรูปภาพเป็น Grid 2 คอลัมน์) */}
       <div className="chat-messages" style={{ 
-        flex: 1, /* 🔓 ขยายพื้นที่ให้เต็มช่องว่างที่เหลืออยู่ */
-        overflowY: 'auto', /* 🔓 เลื่อน (Scroll) ได้เฉพาะในกรอบนี้ */
+        flex: 1, 
+        overflowY: 'auto', 
         padding: '20px',
         display: 'flex',
         flexDirection: 'column',
         gap: '15px',
-        backgroundImage: 'url(/BG2.jpg)', /* ย้ายรูปพื้นหลังมาไว้ตรงนี้ */
+        backgroundImage: 'url(/BG2.jpg)',
         backgroundSize: 'cover',
         backgroundPosition: 'center'
       }}>
@@ -401,47 +394,110 @@ const compressImage = (file) => {
            <div style={{ textAlign: 'center', color: '#64748B', marginTop: '20px', fontSize: '0.85rem' }}>เริ่มการสนทนากับ {partnerInfo.username}</div>
         )}
 
-        {messages.map((msg) => {
-          const isMe = msg.sender === myUsername;
-          return (
-            <div key={msg.id} className={`msg-wrapper ${isMe ? 'items-end' : 'items-start'}`}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexDirection: isMe ? 'row-reverse' : 'row' }}>
-                
-                {/* กล่องข้อความ */}
-                <div className={`msg-bubble ${msg.isDeleted ? '' : (isMe ? 'msg-me' : 'msg-partner')}`} style={{ 
-                  padding: (msg.imageUrl && !msg.isDeleted) ? '4px' : '12px 16px',
-                  background: msg.isDeleted ? 'transparent' : undefined,
-                  border: msg.isDeleted ? '1px dashed #64748B' : undefined,
-                  color: msg.isDeleted ? '#64748B' : undefined,
-                  boxShadow: msg.isDeleted ? 'none' : undefined
-                }}>
-                  {msg.isDeleted ? (
-                    <span style={{ fontStyle: 'italic', fontSize: '0.85rem' }}>🚫 ข้อความนี้ถูกลบแล้ว</span>
-                  ) : (
-                    msg.imageUrl ? (
-                      <img src={msg.imageUrl} alt="attachment" style={{ maxWidth: '100%', borderRadius: '12px', border: `1px solid ${isMe ? '#CFA348' : '#1E293B'}`, display: 'block' }} />
-                    ) : (
-                      <span>{msg.text}</span>
-                    )
-                  )}
-                </div>
+        {/* 🌟 ใช้ฟังก์ชันดักจับกลุ่มรูปภาพ */}
+        {(() => {
+          const elements = [];
+          let imgGroup = [];
 
-                {/* ปุ่มถังขยะ */}
-                {isMe && !msg.isDeleted && (
-                  <button onClick={() => handleDeleteMessage(msg.id)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '5px' }}>
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </div>
-              <span style={{ fontSize: '0.7rem', color: '#64748B', padding: '0 5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                {formatTime(msg.timestamp)}
-                {isMe && !msg.isDeleted && (
-                  msg.isRead ? <span style={{ color: '#10B981', fontWeight: 'bold' }}>อ่านแล้ว</span> : <span>ส่งแล้ว</span>
-                )}
-              </span>
-            </div>
-          );
-        })}
+          const flushImgGroup = () => {
+            if (imgGroup.length > 0) {
+              const sender = imgGroup[0].sender;
+              const isMe = sender === myUsername;
+              const lastMsg = imgGroup[imgGroup.length - 1];
+
+              elements.push(
+                <div key={`group-${imgGroup[0].id}`} className={`msg-wrapper ${isMe ? 'items-end' : 'items-start'}`}>
+                  <div style={{ display: 'flex', flexDirection: isMe ? 'row-reverse' : 'row', gap: '8px', alignItems: 'flex-end' }}>
+                    
+                    {/* กล่อง Grid สำหรับรูปภาพ */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: imgGroup.length > 1 ? 'repeat(2, 1fr)' : '1fr', // 2 คอลัมน์เมื่อมีหลายรูป
+                      gap: '5px',
+                      maxWidth: '260px' 
+                    }}>
+                      {imgGroup.map(msg => (
+                        <div key={msg.id} style={{ position: 'relative' }}>
+                          <img
+                            src={msg.imageUrl}
+                            alt="attachment"
+                            onClick={() => setSelectedImage(msg.imageUrl)} /* 🌟 คลิกเพื่อขยายรูปลง State */
+                            style={{
+                              width: imgGroup.length > 1 ? '120px' : '160px',
+                              height: imgGroup.length > 1 ? '120px' : '160px',
+                              objectFit: 'cover', // ตัดขอบให้สี่เหลี่ยมพอดี
+                              borderRadius: '12px',
+                              border: `1px solid ${isMe ? '#CFA348' : '#1E293B'}`,
+                              cursor: 'pointer',
+                              transition: 'transform 0.2s'
+                            }}
+                            onMouseOver={e => e.currentTarget.style.transform = 'scale(0.98)'}
+                            onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+                          />
+                          {isMe && (
+                            <button onClick={() => handleDeleteMessage(msg.id)} style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', cursor: 'pointer', padding: '5px', borderRadius: '50%' }}>
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.7rem', color: '#64748B', padding: '0 5px', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '5px' }}>
+                    {formatTime(lastMsg.timestamp)}
+                    {isMe && (lastMsg.isRead ? <span style={{ color: '#10B981', fontWeight: 'bold' }}>อ่านแล้ว</span> : <span>ส่งแล้ว</span>)}
+                  </span>
+                </div>
+              );
+              imgGroup = []; 
+            }
+          };
+
+          // แยกแยะข้อความกับรูปภาพ
+          messages.forEach((msg) => {
+            if (msg.isDeleted) {
+              flushImgGroup();
+              const isMe = msg.sender === myUsername;
+              elements.push(
+                <div key={msg.id} className={`msg-wrapper ${isMe ? 'items-end' : 'items-start'}`}>
+                  <div className={`msg-bubble`} style={{ padding: '12px 16px', background: 'transparent', border: '1px dashed #64748B', color: '#64748B' }}>
+                    <span style={{ fontStyle: 'italic', fontSize: '0.85rem' }}>🚫 ข้อความนี้ถูกลบแล้ว</span>
+                  </div>
+                </div>
+              );
+            } else if (msg.imageUrl) {
+              // จัดกลุ่มรูปภาพที่ส่งติดกัน
+              if (imgGroup.length > 0 && imgGroup[imgGroup.length - 1].sender !== msg.sender) {
+                flushImgGroup();
+              }
+              imgGroup.push(msg);
+            } else {
+              flushImgGroup();
+              const isMe = msg.sender === myUsername;
+              elements.push(
+                <div key={msg.id} className={`msg-wrapper ${isMe ? 'items-end' : 'items-start'}`}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexDirection: isMe ? 'row-reverse' : 'row' }}>
+                    <div className={`msg-bubble ${isMe ? 'msg-me' : 'msg-partner'}`} style={{ padding: '12px 16px' }}>
+                      <span>{msg.text}</span>
+                    </div>
+                    {isMe && (
+                      <button onClick={() => handleDeleteMessage(msg.id)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '5px' }}>
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                  <span style={{ fontSize: '0.7rem', color: '#64748B', padding: '0 5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    {formatTime(msg.timestamp)}
+                    {isMe && (msg.isRead ? <span style={{ color: '#10B981', fontWeight: 'bold' }}>อ่านแล้ว</span> : <span>ส่งแล้ว</span>)}
+                  </span>
+                </div>
+              );
+            }
+          });
+          flushImgGroup(); 
+          return elements;
+        })()}
+        
         <div ref={messagesEndRef} />
       </div>
 
@@ -451,12 +507,13 @@ const compressImage = (file) => {
         backdropFilter: 'blur(10px)',
         padding: '15px 20px',
         borderTop: '1px solid rgba(255,255,255,0.05)',
-        flexShrink: 0, /* 🔒 ห้ามหดตัวเด็ดขาด */
+        flexShrink: 0, 
         zIndex: 10
       }}>
         {isFriend ? (
           <form onSubmit={handleSendMessage} className="chat-form">
-            <input type="file" accept="image/*" id="chatUpload" style={{ display: 'none' }} onChange={handleImageUpload} />
+            {/* 🌟 ใส่ multiple ตรงนี้เพื่อให้เลือกไฟล์ได้ทีละหลายรูป */}
+            <input type="file" accept="image/*" multiple id="chatUpload" style={{ display: 'none' }} onChange={handleImageUpload} />
             <label htmlFor="chatUpload" style={{ color: '#94A3B8', cursor: 'pointer', padding: '5px' }}>
               <Paperclip size={20} />
             </label>
@@ -481,6 +538,32 @@ const compressImage = (file) => {
           </div>
         )}
       </div>
+
+      {/* 🌟 4. Popup ขยายรูปภาพพร้อมปุ่มดาวน์โหลด (Fullscreen Modal) */}
+      {selectedImage && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          background: 'rgba(0,0,0,0.95)', zIndex: 9999,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+        }}>
+          {/* ปุ่มปิด X มุมขวาบน */}
+          <button onClick={() => setSelectedImage(null)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: '10px' }}>
+            <X size={32} />
+          </button>
+          
+          {/* รูปภาพขยายเต็มจอ (ไม่ให้เสียสัดส่วน) */}
+          <img src={selectedImage} alt="fullscreen" style={{ maxWidth: '95%', maxHeight: '75vh', objectFit: 'contain', borderRadius: '8px' }} />
+          
+          {/* ปุ่มบันทึกรูปภาพ (Download) */}
+          <a href={selectedImage} download={`9Plus_Chat_Image_${Date.now()}.jpg`} style={{ 
+            marginTop: '30px', background: '#CFA348', color: '#000', padding: '12px 30px', 
+            borderRadius: '30px', textDecoration: 'none', fontWeight: 'bold', 
+            display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 15px rgba(207, 163, 72, 0.4)'
+          }}>
+            <Download size={20} /> บันทึกรูปภาพ
+          </a>
+        </div>
+      )}
 
     </div>
   );
