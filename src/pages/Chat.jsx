@@ -81,7 +81,49 @@ export default function Chat() {
     initChat();
   }, [username, navigate]);
 
-  // ==========================================================
+  // ===============================
+  // 🌟 ฟังก์ชันบีบอัดรูปภาพก่อนส่ง
+const compressImage = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // กำหนดความกว้าง-ยาวสูงสุด (เช่น 800px กำลังดีสำหรับแชท)
+        const MAX_SIZE = 800;
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // แปลงกลับเป็น Base64 แบบ JPEG และบีบอัดคุณภาพเหลือ 60% (0.6)
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+        resolve(compressedBase64);
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
+
 
   // 🌟 ชุดที่ 2: ระบบ Socket (Real-time) ทำงานแยกต่างหาก
   // จะเริ่มทำงานก็ต่อเมื่อรู้ "ชื่อห้อง (room)" และ "ชื่อเรา (myUsername)" แล้วเท่านั้น
@@ -169,35 +211,46 @@ export default function Chat() {
     } catch(err) { console.error("Save msg error", err); }
   };
 
-  // 🌟 ฟังก์ชันส่งรูปภาพ
-  const handleImageUpload = (e) => {
+  // 🌟 ฟังก์ชันส่งรูปภาพ (บีบอัดก่อนส่ง)
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file && isFriend) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
+      try {
+        // 1. รอให้ฟังก์ชันบีบอัดรูปทำงานให้เสร็จ
+        const compressedBase64 = await compressImage(file);
+        
         const newMessage = {
           id: Date.now(),
           room: room,
           sender: myUsername,
           text: null,
-          imageUrl: reader.result,
+          imageUrl: compressedBase64, // ใช้รูปที่บีบอัดแล้ว
           timestamp: new Date(),
-          isDeleted: false
+          isDeleted: false,
+          isRead: false
         };
         
+        // 2. แสดงบนหน้าจอตัวเองทันที
         setMessages((prev) => [...prev, newMessage]);
+        
+        // 3. ส่งผ่าน Socket ให้เพื่อนเด้งทันที
         socket?.emit('send_message', newMessage);
 
-        try {
-          await fetch(`${API_URL}/api/chat/save`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newMessage)
-          });
-        } catch(err) { console.error("Save img error", err); }
-      };
-      reader.readAsDataURL(file);
+        // 4. บันทึกลง Database
+        await fetch(`${API_URL}/api/chat/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newMessage)
+        });
+
+      } catch(err) { 
+        console.error("Upload/Compress error:", err); 
+        alert("เกิดข้อผิดพลาดในการประมวลผลรูปภาพ");
+      }
     }
+    
+    // เคลียร์ค่า input file เพื่อให้กดส่งรูปเดิมซ้ำได้ในครั้งต่อไป
+    e.target.value = null; 
   };
 
   // 🌟 ฟังก์ชันขอลบข้อความ (Soft Delete)
