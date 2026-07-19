@@ -215,7 +215,7 @@ export default function Chat() {
     }
   };
 
- // 🌟 ฟังก์ชันเพิ่มเพื่อน (ใช้จากการกดปุ่มเมื่อยังไม่เป็นเพื่อน)
+  // 🌟 ฟังก์ชันเพิ่มเพื่อน (ใช้จากการกดปุ่มเมื่อยังไม่เป็นเพื่อน)
   const handleAddDirectFriend = async () => {
     try {
       const res = await fetch(`${API_URL}/api/chat/add-friend`, {
@@ -225,11 +225,8 @@ export default function Chat() {
       });
       const data = await res.json();
       if (data.success) {
-        alert('ส่งคำขอเพิ่มเพื่อนสำเร็จ!');
+        alert('เพิ่มเพื่อนสำเร็จ! สามารถพูดคุยได้เลย');
         setIsFriend(true);
-        
-        // 🌟 สะกิดเพื่อนให้อัปเดตหน้าจอทันที!
-        socket?.emit('send_message', { room: partnerInfo.username, type: 'refresh' });
       } else {
         alert(data.message);
       }
@@ -272,43 +269,56 @@ export default function Chat() {
 
 
   return (
-    <div className="chat-wrapper">
-      <div className="chat-page">
-        
-        {/* Top Navbar */}
-        <div className="chat-navbar">
-          <div className="chat-nav-left">
-            <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}>
-              <ArrowLeft size={24} />
-            </button>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ position: 'relative' }}>
-                <img src={partnerInfo.profileImageUrl} alt="profile" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
-                {partnerInfo.isOnline && (
-                  <div style={{ position: 'absolute', bottom: 0, right: 0, width: '12px', height: '12px', background: '#10B981', border: '2px solid rgba(11, 14, 20, 0.95)', borderRadius: '50%' }}></div>
-                )}
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1rem', color: '#fff' }}>{partnerInfo.username}</h3>
-                <p style={{ margin: 0, fontSize: '0.75rem', color: partnerInfo.isOnline ? '#10B981' : '#64748B' }}>
-                  {isFriend ? (partnerInfo.isOnline ? 'ออนไลน์' : 'ออฟไลน์') : 'ยังไม่ได้เป็นเพื่อน'}
-                </p>
-              </div>
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      /* ดึงให้เต็มกรอบหน้าจอ โดยชดเชย padding ของ Layout */
+      margin: '-20px', 
+      /* ล็อกความสูงให้พอดีหน้าจอ (หักพื้นที่ TopNav และ BottomNav ออก) */
+      height: 'calc(100vh - 135px)', 
+      background: '#0B0E14' 
+    }}>
+      
+      {/* 🌟 1. Top Navbar (ถูกล็อกไว้ด้านบน) */}
+      <div className="chat-navbar" style={{ 
+        background: 'rgba(11, 14, 20, 0.95)',
+        backdropFilter: 'blur(10px)',
+        padding: '15px 20px',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexShrink: 0, /* 🔒 ห้ามหดตัวเด็ดขาด */
+        zIndex: 10
+      }}>
+        <div className="chat-nav-left" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}>
+            <ArrowLeft size={24} />
+          </button>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ position: 'relative' }}>
+              <img src={partnerInfo.profileImageUrl} alt="profile" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
+              {partnerInfo.isOnline && (
+                <div style={{ position: 'absolute', bottom: 0, right: 0, width: '12px', height: '12px', background: '#10B981', border: '2px solid rgba(11, 14, 20, 0.95)', borderRadius: '50%' }}></div>
+              )}
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1rem', color: '#fff' }}>{partnerInfo.username}</h3>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: partnerInfo.isOnline ? '#10B981' : '#64748B' }}>
+                {isFriend ? (partnerInfo.isOnline ? 'ออนไลน์' : 'ออฟไลน์') : 'ยังไม่ได้เป็นเพื่อน'}
+              </p>
             </div>
           </div>
+        </div>
 
-          <div className="chat-nav-right">
-            <div style={{ position: 'relative', cursor: 'pointer' }}>
-              <Bell size={22} color="#CFA348" />
-            </div>
-
-            <button onClick={() => setShowMenu(!showMenu)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}>
-              <MoreVertical size={24} />
-            </button>
-
-            {/* Dropdown Menu */}
-            {showMenu && (
+        <div className="chat-nav-right" style={{ position: 'relative', display: 'flex', gap: '15px', alignItems: 'center' }}>
+          {/* ส่วนเมนู 3 จุด ค้นหา/บล็อก ของคุณใส่ตรงนี้ได้เลย (ผมดึงโค้ดเปิดปิดเมนูมาให้ด้วยครับ) */}
+          <button onClick={() => setShowMenu(!showMenu)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}>
+            <MoreVertical size={24} />
+          </button>
+          
+          {showMenu && (
               <div style={{ position: 'absolute', top: '40px', right: '0', background: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '10px 0', width: '180px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', zIndex: 30 }}>
                 <button style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 15px', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }} onClick={() => { setShowSearchModal(true); setShowMenu(false); }}>
                   <Search size={16} color="#94A3B8" /> ค้นหา Username
@@ -318,121 +328,107 @@ export default function Chat() {
                   <Ban size={16} color="#EF4444" /> บล็อกผู้ใช้นี้
                 </button>
               </div>
-            )}
-          </div>
-        </div>
-
-       {/* Chat Messages */}
-        <div className="chat-messages">
-          {messages.length === 0 && isFriend && (
-             <div style={{ textAlign: 'center', color: '#64748B', marginTop: '20px', fontSize: '0.85rem' }}>เริ่มการสนทนากับ {partnerInfo.username}</div>
-          )}
-
-          {messages.map((msg) => {
-            // ❌ ลบ if(msg.type === 'delete') ทิ้งไปเลยนะครับ เราย้ายไปด้านบนแล้ว
-            
-            const isMe = msg.sender === myUsername;
-            return (
-              <div key={msg.id} className={`msg-wrapper ${isMe ? 'items-end' : 'items-start'}`}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexDirection: isMe ? 'row-reverse' : 'row' }}>
-                  
-                  {/* กล่องข้อความ / รูปภาพ */}
-                  <div className={`msg-bubble ${msg.isDeleted ? '' : (isMe ? 'msg-me' : 'msg-partner')}`} style={{ 
-                    padding: (msg.imageUrl && !msg.isDeleted) ? '4px' : '12px 16px',
-                    background: msg.isDeleted ? 'transparent' : undefined,
-                    border: msg.isDeleted ? '1px dashed #64748B' : undefined,
-                    color: msg.isDeleted ? '#64748B' : undefined,
-                    boxShadow: msg.isDeleted ? 'none' : undefined
-                  }}>
-                    {msg.isDeleted ? (
-                      <span style={{ fontStyle: 'italic', fontSize: '0.85rem' }}>🚫 ข้อความนี้ถูกลบแล้ว</span>
-                    ) : (
-                      msg.imageUrl ? (
-                        <img src={msg.imageUrl} alt="attachment" style={{ maxWidth: '100%', borderRadius: '12px', border: `1px solid ${isMe ? '#CFA348' : '#1E293B'}`, display: 'block' }} />
-                      ) : (
-                        <span>{msg.text}</span>
-                      )
-                    )}
-                  </div>
-
-                  {/* ปุ่มถังขยะ */}
-                  {isMe && !msg.isDeleted && (
-                    <button onClick={() => handleDeleteMessage(msg.id)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '5px' }}>
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-                </div>
-                
-                {/* 🌟 เพิ่มสถานะ "อ่านแล้ว" ตรงส่วนที่แสดงเวลา */}
-                <span style={{ fontSize: '0.7rem', color: '#64748B', padding: '0 5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  {formatTime(msg.timestamp)}
-                  {isMe && !msg.isDeleted && (
-                    msg.isRead ? <span style={{ color: '#10B981', fontWeight: 'bold' }}>อ่านแล้ว</span> : <span>ส่งแล้ว</span>
-                  )}
-                </span>
-
-              </div>
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input Area */}
-        <div className="chat-input-area">
-          {isFriend ? (
-            <form onSubmit={handleSendMessage} className="chat-form">
-              <input type="file" accept="image/*" id="chatUpload" style={{ display: 'none' }} onChange={handleImageUpload} />
-              <label htmlFor="chatUpload" style={{ color: '#94A3B8', cursor: 'pointer', padding: '5px' }}>
-                <Paperclip size={20} />
-              </label>
-              <input 
-                type="text" 
-                placeholder="พิมพ์ข้อความ..." 
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                style={{ flex: 1, background: 'transparent', border: 'none', color: '#fff', outline: 'none', fontSize: '0.95rem', padding: '5px' }}
-              />
-              <button type="submit" disabled={!inputText.trim()} style={{ background: inputText.trim() ? '#CFA348' : 'rgba(255,255,255,0.1)', color: inputText.trim() ? '#000' : '#64748B', border: 'none', width: '38px', height: '38px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: inputText.trim() ? 'pointer' : 'not-allowed', transition: '0.3s' }}>
-                <Send size={18} style={{ marginLeft: '2px' }} />
-              </button>
-            </form>
-          ) : (
-            <div className="not-friend-alert">
-              <UserPlus size={30} color="#CFA348" style={{ margin: '0 auto 10px auto' }} />
-              <p style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: '#fff' }}>ต้องเป็นเพื่อนกันก่อนถึงจะพูดคุยได้</p>
-              <button onClick={handleAddDirectFriend} style={{ background: '#CFA348', color: '#000', border: 'none', padding: '10px 20px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', width: '100%' }}>
-                ส่งคำขอเพิ่ม {partnerInfo.username} เป็นเพื่อน
-              </button>
-            </div>
           )}
         </div>
+      </div>
 
-        {/* Modal ค้นหาเพื่อน */}
-        {showSearchModal && (
-          <div className="chat-modal-overlay">
-            <div className="chat-modal-box">
-              <h3 style={{ margin: '0 0 15px 0', color: '#CFA348', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                <Search size={20} /> ค้นหาเพื่อน
-              </h3>
-              <p style={{ fontSize: '0.8rem', color: '#94A3B8', marginBottom: '15px' }}>เพิ่มเพื่อนด้วย Username เพื่อความเป็นส่วนตัว</p>
-              
-              <input 
-                type="text" 
-                placeholder="กรอก Username..." 
-                value={searchUsername}
-                onChange={(e) => setSearchUsername(e.target.value)}
-                style={{ width: '100%', boxSizing: 'border-box', padding: '12px', borderRadius: '10px', border: '1px solid rgba(207, 163, 72, 0.3)', background: 'rgba(0,0,0,0.3)', color: '#fff', marginBottom: '20px', outline: 'none' }}
-              />
-              
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={() => setShowSearchModal(false)} style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>ยกเลิก</button>
-                <button onClick={handleSearchAddFriend} style={{ flex: 1, padding: '10px', background: '#CFA348', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>เพิ่มเพื่อน</button>
-              </div>
-            </div>
-          </div>
+      {/* 🌟 2. พื้นที่ข้อความ (เลื่อนได้เฉพาะตรงนี้!) */}
+      <div className="chat-messages" style={{ 
+        flex: 1, /* 🔓 ขยายพื้นที่ให้เต็มช่องว่างที่เหลืออยู่ */
+        overflowY: 'auto', /* 🔓 เลื่อน (Scroll) ได้เฉพาะในกรอบนี้ */
+        padding: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '15px',
+        backgroundImage: 'url(/BG2.jpg)', /* ย้ายรูปพื้นหลังมาไว้ตรงนี้ */
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}>
+        {messages.length === 0 && isFriend && (
+           <div style={{ textAlign: 'center', color: '#64748B', marginTop: '20px', fontSize: '0.85rem' }}>เริ่มการสนทนากับ {partnerInfo.username}</div>
         )}
 
+        {messages.map((msg) => {
+          const isMe = msg.sender === myUsername;
+          return (
+            <div key={msg.id} className={`msg-wrapper ${isMe ? 'items-end' : 'items-start'}`}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexDirection: isMe ? 'row-reverse' : 'row' }}>
+                
+                {/* กล่องข้อความ */}
+                <div className={`msg-bubble ${msg.isDeleted ? '' : (isMe ? 'msg-me' : 'msg-partner')}`} style={{ 
+                  padding: (msg.imageUrl && !msg.isDeleted) ? '4px' : '12px 16px',
+                  background: msg.isDeleted ? 'transparent' : undefined,
+                  border: msg.isDeleted ? '1px dashed #64748B' : undefined,
+                  color: msg.isDeleted ? '#64748B' : undefined,
+                  boxShadow: msg.isDeleted ? 'none' : undefined
+                }}>
+                  {msg.isDeleted ? (
+                    <span style={{ fontStyle: 'italic', fontSize: '0.85rem' }}>🚫 ข้อความนี้ถูกลบแล้ว</span>
+                  ) : (
+                    msg.imageUrl ? (
+                      <img src={msg.imageUrl} alt="attachment" style={{ maxWidth: '100%', borderRadius: '12px', border: `1px solid ${isMe ? '#CFA348' : '#1E293B'}`, display: 'block' }} />
+                    ) : (
+                      <span>{msg.text}</span>
+                    )
+                  )}
+                </div>
+
+                {/* ปุ่มถังขยะ */}
+                {isMe && !msg.isDeleted && (
+                  <button onClick={() => handleDeleteMessage(msg.id)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '5px' }}>
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
+              <span style={{ fontSize: '0.7rem', color: '#64748B', padding: '0 5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                {formatTime(msg.timestamp)}
+                {isMe && !msg.isDeleted && (
+                  msg.isRead ? <span style={{ color: '#10B981', fontWeight: 'bold' }}>อ่านแล้ว</span> : <span>ส่งแล้ว</span>
+                )}
+              </span>
+            </div>
+          );
+        })}
+        <div ref={messagesEndRef} />
       </div>
+
+      {/* 🌟 3. ช่องพิมพ์ข้อความ (ถูกล็อกไว้ด้านล่าง) */}
+      <div className="chat-input-area" style={{
+        background: 'rgba(11, 14, 20, 0.95)',
+        backdropFilter: 'blur(10px)',
+        padding: '15px 20px',
+        borderTop: '1px solid rgba(255,255,255,0.05)',
+        flexShrink: 0, /* 🔒 ห้ามหดตัวเด็ดขาด */
+        zIndex: 10
+      }}>
+        {isFriend ? (
+          <form onSubmit={handleSendMessage} className="chat-form">
+            <input type="file" accept="image/*" id="chatUpload" style={{ display: 'none' }} onChange={handleImageUpload} />
+            <label htmlFor="chatUpload" style={{ color: '#94A3B8', cursor: 'pointer', padding: '5px' }}>
+              <Paperclip size={20} />
+            </label>
+            <input 
+              type="text" 
+              placeholder="พิมพ์ข้อความ..." 
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              style={{ flex: 1, background: 'transparent', border: 'none', color: '#fff', outline: 'none', fontSize: '0.95rem', padding: '5px' }}
+            />
+            <button type="submit" disabled={!inputText.trim()} style={{ background: inputText.trim() ? '#CFA348' : 'rgba(255,255,255,0.1)', color: inputText.trim() ? '#000' : '#64748B', border: 'none', width: '38px', height: '38px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: inputText.trim() ? 'pointer' : 'not-allowed', transition: '0.3s' }}>
+              <Send size={18} style={{ marginLeft: '2px' }} />
+            </button>
+          </form>
+        ) : (
+          <div className="not-friend-alert">
+            <UserPlus size={30} color="#CFA348" style={{ margin: '0 auto 10px auto' }} />
+            <p style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: '#fff' }}>ต้องเป็นเพื่อนกันก่อนถึงจะพูดคุยได้</p>
+            <button onClick={handleAddDirectFriend} style={{ background: '#CFA348', color: '#000', border: 'none', padding: '10px 20px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', width: '100%' }}>
+              ส่งคำขอเพิ่ม {partnerInfo.username} เป็นเพื่อน
+            </button>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }
