@@ -595,8 +595,9 @@ return (
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
         }}>
           <h3 style={{ color: '#fff', marginBottom: '10px' }}>ตัวอย่างรูปภาพก่อนส่ง</h3>
-          <p style={{ color: '#94A3B8', fontSize: '0.9rem', marginBottom: '25px' }}>จำนวน {previewImages.length}/4 รูป</p>
-
+          <p style={{ color: '#94A3B8', fontSize: '0.9rem', marginBottom: '25px' }}>
+           เลือกแล้ว <span style={{ color: '#CFA348', fontWeight: 'bold' }}>{previewImages.length}</span> รูป (จากสูงสุด 4 รูป)
+          </p>
           <div style={{
             display: 'grid',
             gridTemplateColumns: previewImages.length > 1 ? 'repeat(2, 1fr)' : '1fr',
