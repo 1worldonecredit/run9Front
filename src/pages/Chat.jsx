@@ -79,9 +79,15 @@ export default function Chat() {
       setSocket(newSocket);
       newSocket.emit('join_room', chatRoom);
 
-      // ดักฟังข้อความใหม่จากเพื่อน
+      // 🌟 ย้ายการเช็ค 'delete' มาไว้ที่ตรงนี้แทน เพื่อไม่ให้เกิด Infinite Loop
       newSocket.on('receive_message', (data) => {
-        setMessages((prev) => [...prev, data]);
+        if (data.type === 'delete') {
+          // ถ้าเป็นการแจ้งเตือนว่าลบข้อความ ให้อัปเดตสถานะข้อความนั้น
+          setMessages((prev) => prev.map(m => m.id === data.msgId ? { ...m, isDeleted: true } : m));
+        } else {
+          // ถ้าเป็นข้อความปกติ ก็เพิ่มเข้าจอ
+          setMessages((prev) => [...prev, data]);
+        }
       });
 
       setLoading(false);
@@ -269,19 +275,15 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Chat Messages */}
+       {/* Chat Messages */}
         <div className="chat-messages">
           {messages.length === 0 && isFriend && (
              <div style={{ textAlign: 'center', color: '#64748B', marginTop: '20px', fontSize: '0.85rem' }}>เริ่มการสนทนากับ {partnerInfo.username}</div>
           )}
 
           {messages.map((msg) => {
-            // ดักจับ Event ลบข้อความที่ส่งมาจาก Socket
-            if(msg.type === 'delete') {
-                setMessages(prev => prev.map(m => m.id === msg.msgId ? { ...m, isDeleted: true } : m));
-                return null;
-            }
-
+            // ❌ ลบ if(msg.type === 'delete') ทิ้งไปเลยนะครับ เราย้ายไปด้านบนแล้ว
+            
             const isMe = msg.sender === myUsername;
             return (
               <div key={msg.id} className={`msg-wrapper ${isMe ? 'items-end' : 'items-start'}`}>
@@ -306,14 +308,22 @@ export default function Chat() {
                     )}
                   </div>
 
-                  {/* ปุ่มถังขยะ (โชว์เฉพาะข้อความที่เราส่งและยังไม่ลบ) */}
+                  {/* ปุ่มถังขยะ */}
                   {isMe && !msg.isDeleted && (
                     <button onClick={() => handleDeleteMessage(msg.id)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '5px' }}>
                       <Trash2 size={16} />
                     </button>
                   )}
                 </div>
-                <span style={{ fontSize: '0.7rem', color: '#64748B', padding: '0 5px' }}>{formatTime(msg.timestamp)}</span>
+                
+                {/* 🌟 เพิ่มสถานะ "อ่านแล้ว" ตรงส่วนที่แสดงเวลา */}
+                <span style={{ fontSize: '0.7rem', color: '#64748B', padding: '0 5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  {formatTime(msg.timestamp)}
+                  {isMe && !msg.isDeleted && (
+                    msg.isRead ? <span style={{ color: '#10B981', fontWeight: 'bold' }}>อ่านแล้ว</span> : <span>ส่งแล้ว</span>
+                  )}
+                </span>
+
               </div>
             );
           })}
