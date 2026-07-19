@@ -29,6 +29,8 @@ export default function Chat() {
   const [searchUsername, setSearchUsername] = useState('');
 
   // 🌟 โหลดข้อมูลเริ่มต้น (โปรไฟล์, เช็คเพื่อน, ดึงแชทเก่า, ต่อ Socket)
+  // 🌟 ชุดที่ 1: จัดการข้อมูลพื้นฐาน (ดึงประวัติแชท, เช็คเพื่อน, แจ้งระบบว่าอ่านแล้ว)
+  // ทำงานแค่ครั้งเดียวตอนเปิดหน้า
   useEffect(() => {
     const initChat = async () => {
       // 1. ดึง Username ตัวเอง
@@ -47,25 +49,24 @@ export default function Chat() {
         return;
       }
 
-      // สร้างชื่อห้องแชท (เรียงตาม A-Z เพื่อให้ได้ชื่อตรงกันเสมอ)
+      // สร้างชื่อห้องแชท
       const chatRoom = [me, username].sort().join('_');
       setRoom(chatRoom);
 
-      // 2. จำลองดึงโปรไฟล์เพื่อน
       setPartnerInfo({
         username: username,
         profileImageUrl: `https://ui-avatars.com/api/?name=${username}&background=random&color=fff`,
         isOnline: true
       });
 
-      // 3. เช็คสถานะ "เพื่อน" จาก Database
+      // 3. เช็คสถานะเพื่อน
       try {
         const friendRes = await fetch(`${API_URL}/api/chat/check-friend?me=${me}&friend=${username}`);
         const friendData = await friendRes.json();
         setIsFriend(friendData.isFriend);
       } catch (err) { console.error("Check friend error", err); }
 
-      // 4. ดึงประวัติแชทเก่าจาก Database
+      // 4. ดึงประวัติแชทเก่า
       try {
         const historyRes = await fetch(`${API_URL}/api/chat/history/${chatRoom}`);
         const historyData = await historyRes.json();
@@ -74,31 +75,62 @@ export default function Chat() {
         }
       } catch (err) { console.error("Fetch history error", err); }
 
-      // 5. เชื่อมต่อ Socket.IO
-      const newSocket = io(SOCKET_URL);
-      setSocket(newSocket);
-      newSocket.emit('join_room', chatRoom);
-
-      // 🌟 ย้ายการเช็ค 'delete' มาไว้ที่ตรงนี้แทน เพื่อไม่ให้เกิด Infinite Loop
-      newSocket.on('receive_message', (data) => {
-        if (data.type === 'delete') {
-          // ถ้าเป็นการแจ้งเตือนว่าลบข้อความ ให้อัปเดตสถานะข้อความนั้น
-          setMessages((prev) => prev.map(m => m.id === data.msgId ? { ...m, isDeleted: true } : m));
-        } else {
-          // ถ้าเป็นข้อความปกติ ก็เพิ่มเข้าจอ
-          setMessages((prev) => [...prev, data]);
-        }
-      });
-
       setLoading(false);
-
-      return () => {
-        newSocket.disconnect();
-      };
     };
 
     initChat();
   }, [username, navigate]);
+
+  // ==========================================================
+
+  // 🌟 ชุดที่ 2: ระบบ Socket (Real-time) ทำงานแยกต่างหาก
+  // จะเริ่มทำงานก็ต่อเมื่อรู้ "ชื่อห้อง (room)" และ "ชื่อเรา (myUsername)" แล้วเท่านั้น
+  useEffect(() => {
+    if (!room || !myUsername) return; 
+
+    // 1. เชื่อมต่อ Socket (เพิ่มออปชั่นให้สายไม่หลุดง่าย)
+    const newSocket = io(SOCKET_URL, {
+        transports: ['websocket', 'polling']
+    });
+    setSocket(newSocket);
+
+    // 2. ขอเข้าห้องแชท
+    newSocket.emit('join_room', room);
+
+    // 3. ดักฟังข้อความใหม่จากเพื่อน (ตัวที่ทำให้ข้อความเด้งขึ้นจอทันที)
+    newSocket.on('receive_message', (data) => {
+      if (data.type === 'delete') {
+        setMessages((prev) => prev.map(m => m.id === data.msgId ? { ...m, isDeleted: true } : m));
+      } else {
+        setMessages((prev) => [...prev, data]);
+        
+        // ถ้ารับข้อความใหม่ขณะที่เปิดจอแชทอยู่ ให้ยิงบอกหลังบ้านว่า "อ่านแล้ว" ทันที
+        fetch(`${API_URL}/api/chat/mark-read`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ room: room, me: myUsername })
+        }).catch(err => console.error(err));
+      }
+    });
+
+    // 4. ตัดการเชื่อมต่อเมื่อกดออกไปหน้าอื่น
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [room, myUsername]); // ทำงานใหม่เมื่อ 2 ค่านี้พร้อม
+
+  // ==========================================================
+
+  // ฟังก์ชันพิเศษ: สั่งเคลียร์แจ้งเตือนทุกครั้งที่เปิดห้องแชท
+  useEffect(() => {
+    if (room && myUsername && messages.length > 0) {
+      fetch(`${API_URL}/api/chat/mark-read`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ room: room, me: myUsername })
+      }).catch(err => console.error("Auto mark-read error", err));
+    }
+  }, [messages.length, room, myUsername]);
 
   // เลื่อนจอลงล่างเสมอ
   useEffect(() => {
