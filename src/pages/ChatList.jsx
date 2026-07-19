@@ -127,7 +127,20 @@ export default function ChatList() {
   return (
     <div style={{ background: '#0B0E14', minHeight: '100vh', color: '#fff', fontFamily: "'Prompt', sans-serif", paddingBottom: '90px' }}>
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      {/* 🌟 Top Navbar (แก้ตรงนี้ให้ลอยติดหนึบ) */}
+      <div style={{ 
+        position: 'sticky', 
+        top: '-20px', 
+        zIndex: 40, 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        padding: '20px', 
+        background: 'rgba(11, 14, 20, 0.95)', 
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        margin: '-20px -20px 15px -20px'
+      }}>
         <h2 style={{ margin: 0, fontSize: '1.4rem', color: '#CFA348' }}>ข้อความ</h2>
         <button onClick={() => setShowSearchModal(true)} style={{ background: 'rgba(207, 163, 72, 0.15)', border: '1px solid rgba(207, 163, 72, 0.3)', color: '#CFA348', padding: '8px', borderRadius: '50%', cursor: 'pointer' }}>
           <UserPlus size={20} />
