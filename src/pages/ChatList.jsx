@@ -141,7 +141,7 @@ export default function ChatList() {
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         margin: '-20px -20px 15px -20px'
       }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', color: '#CFA348' }}>ข้อความ</h2>
+        <h2 style={{ margin: 0, fontSize: '1.4rem', color: '#CFA348' }}>เพื่อน</h2>
         <button onClick={() => setShowSearchModal(true)} style={{ background: 'rgba(207, 163, 72, 0.15)', border: '1px solid rgba(207, 163, 72, 0.3)', color: '#CFA348', padding: '8px', borderRadius: '50%', cursor: 'pointer' }}>
           <UserPlus size={20} />
         </button>
