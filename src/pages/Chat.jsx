@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Paperclip, MoreVertical, UserPlus, Search, Ban, Bell, CheckCircle2 } from 'lucide-react';
-// import { io } from 'socket.io-client';
+import { ArrowLeft, Send, Paperclip, MoreVertical, UserPlus, Search, Ban, Bell, Phone, Video, Trash2 } from 'lucide-react';
+import { io } from 'socket.io-client';
+
+// 🌟 ตั้งค่า URL ของ API และ Socket (เปลี่ยนเป็น localhost:5100 ได้ถ้ากำลังทดสอบในคอม)
+const API_URL = 'https://api.run9.app'; 
+const SOCKET_URL = 'https://api.run9.app'; 
 
 export default function Chat() {
   const { username } = useParams(); // ชื่อคนที่เรากำลังเปิดแชทด้วย
@@ -9,87 +13,206 @@ export default function Chat() {
   const messagesEndRef = useRef(null);
   
   const [loading, setLoading] = useState(true);
-  const [myUsername, setMyUsername] = useState('me'); 
+  const [myUsername, setMyUsername] = useState(''); 
   const [partnerInfo, setPartnerInfo] = useState({ username: username, profileImageUrl: '', isOnline: true });
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   
-  // 🌟 State สำหรับระบบเพื่อนและการค้นหา
-  const [isFriend, setIsFriend] = useState(false); // เช็คว่าเป็นเพื่อนกันหรือยัง
-  const [unreadCount, setUnreadCount] = useState(2); // แจ้งเตือนข้อความใหม่ (Mock)
+  // State ระบบเพื่อน
+  const [isFriend, setIsFriend] = useState(false);
+  const [room, setRoom] = useState('');
+  const [socket, setSocket] = useState(null);
+  
+  // State เมนู
   const [showMenu, setShowMenu] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchUsername, setSearchUsername] = useState('');
 
+  // 🌟 โหลดข้อมูลเริ่มต้น (โปรไฟล์, เช็คเพื่อน, ดึงแชทเก่า, ต่อ Socket)
   useEffect(() => {
-    // 🌟 จำลองการดึงข้อมูล (คุณต้องไป Fetch API จากตาราง ChatFriends เพื่อเช็ค)
-    setPartnerInfo({
-      username: username,
-      profileImageUrl: `https://ui-avatars.com/api/?name=${username}&background=random&color=fff`,
-      isOnline: true
-    });
+    const initChat = async () => {
+      // 1. ดึง Username ตัวเอง
+      const savedProfileStr = localStorage.getItem('userProfile');
+      let me = '';
+      if (savedProfileStr) {
+        try {
+          me = JSON.parse(savedProfileStr).username || '';
+          setMyUsername(me);
+        } catch (e) {}
+      }
 
-    // สมมติว่าดึง API มาแล้วพบว่า "ยังไม่เป็นเพื่อนกัน"
-    setIsFriend(false); 
+      if (!me) {
+        alert("กรุณาเข้าสู่ระบบก่อนใช้งานแชท");
+        navigate('/');
+        return;
+      }
 
-    setMessages([
-      { id: 1, sender: username, text: 'สวัสดีครับ สนใจเข้าร่วมทีมครับ', timestamp: new Date(Date.now() - 3600000) }
-    ]);
-    
-    setLoading(false);
-  }, [username]);
+      // สร้างชื่อห้องแชท (เรียงตาม A-Z เพื่อให้ได้ชื่อตรงกันเสมอ)
+      const chatRoom = [me, username].sort().join('_');
+      setRoom(chatRoom);
 
+      // 2. จำลองดึงโปรไฟล์เพื่อน
+      setPartnerInfo({
+        username: username,
+        profileImageUrl: `https://ui-avatars.com/api/?name=${username}&background=random&color=fff`,
+        isOnline: true
+      });
+
+      // 3. เช็คสถานะ "เพื่อน" จาก Database
+      try {
+        const friendRes = await fetch(`${API_URL}/api/chat/check-friend?me=${me}&friend=${username}`);
+        const friendData = await friendRes.json();
+        setIsFriend(friendData.isFriend);
+      } catch (err) { console.error("Check friend error", err); }
+
+      // 4. ดึงประวัติแชทเก่าจาก Database
+      try {
+        const historyRes = await fetch(`${API_URL}/api/chat/history/${chatRoom}`);
+        const historyData = await historyRes.json();
+        if (historyData.success) {
+          setMessages(historyData.messages);
+        }
+      } catch (err) { console.error("Fetch history error", err); }
+
+      // 5. เชื่อมต่อ Socket.IO
+      const newSocket = io(SOCKET_URL);
+      setSocket(newSocket);
+      newSocket.emit('join_room', chatRoom);
+
+      // ดักฟังข้อความใหม่จากเพื่อน
+      newSocket.on('receive_message', (data) => {
+        setMessages((prev) => [...prev, data]);
+      });
+
+      setLoading(false);
+
+      return () => {
+        newSocket.disconnect();
+      };
+    };
+
+    initChat();
+  }, [username, navigate]);
+
+  // เลื่อนจอลงล่างเสมอ
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // 🌟 ฟังก์ชันส่งข้อความ (บันทึกลง Database ทันที)
+  // 🌟 ฟังก์ชันส่งข้อความ
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!inputText.trim() || !isFriend) return;
 
     const newMessage = {
-      id: Date.now(),
+      id: Date.now(), // ID ชั่วคราวก่อนลง DB
+      room: room,
       sender: myUsername,
       text: inputText,
-      timestamp: new Date()
+      imageUrl: null,
+      timestamp: new Date(),
+      isDeleted: false
     };
 
-    // 1. โชว์ขึ้นจอตัวเองก่อนเพื่อความรวดเร็ว
-    setMessages([...messages, newMessage]);
+    // 1. โชว์ที่หน้าจอเราทันที
+    setMessages((prev) => [...prev, newMessage]);
     setInputText('');
 
-    /* 🌟 2. ส่งไปบันทึกลง Database และส่งผ่าน Socket
-    try {
-      // ส่งผ่าน Socket ให้เพื่อนเห็นทันที
-      socket.emit('send_message', newMessage);
+    // 2. ส่งผ่าน Socket ให้เพื่อน
+    socket?.emit('send_message', newMessage);
 
-      // ยิง API บันทึกลงตาราง ChatMessages ทันที
-      await fetch('https://api.run9.app/api/chat/save', {
+    // 3. บันทึกลง Database
+    try {
+      await fetch(`${API_URL}/api/chat/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          room: 'room_name',
-          sender: myUsername,
-          text: inputText
-        })
+        body: JSON.stringify(newMessage)
       });
-    } catch(err) {
-      console.error("Save message error", err);
-    }
-    */
+    } catch(err) { console.error("Save msg error", err); }
   };
 
-  // 🌟 ฟังก์ชันขอเพิ่มเพื่อนด้วย Username
-  const handleAddFriend = () => {
+  // 🌟 ฟังก์ชันส่งรูปภาพ
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file && isFriend) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const newMessage = {
+          id: Date.now(),
+          room: room,
+          sender: myUsername,
+          text: null,
+          imageUrl: reader.result,
+          timestamp: new Date(),
+          isDeleted: false
+        };
+        
+        setMessages((prev) => [...prev, newMessage]);
+        socket?.emit('send_message', newMessage);
+
+        try {
+          await fetch(`${API_URL}/api/chat/save`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newMessage)
+          });
+        } catch(err) { console.error("Save img error", err); }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // 🌟 ฟังก์ชันขอลบข้อความ (Soft Delete)
+  const handleDeleteMessage = async (msgId) => {
+    if(window.confirm('ต้องการลบข้อความนี้ใช่หรือไม่? (ลบเฉพาะหน้าจอ และเพื่อนจะเห็นว่าข้อความถูกลบ)')) {
+      // อัปเดตหน้าจอตัวเองทันที
+      setMessages(messages.map(msg => msg.id === msgId ? { ...msg, isDeleted: true } : msg));
+      
+      // ยิง API ไปอัปเดต Database
+      try {
+        await fetch(`${API_URL}/api/chat/delete/${msgId}`, { method: 'POST' });
+        // แจ้งเตือนเพื่อนให้ลบข้อความบนจอด้วยผ่าน Socket
+        socket?.emit('send_message', { type: 'delete', msgId: msgId, room: room });
+      } catch (err) { console.error("Delete error", err); }
+    }
+  };
+
+  // 🌟 ฟังก์ชันเพิ่มเพื่อน (ใช้จากการกดปุ่มเมื่อยังไม่เป็นเพื่อน)
+  const handleAddDirectFriend = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/chat/add-friend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ me: myUsername, friendUsername: partnerInfo.username })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('เพิ่มเพื่อนสำเร็จ! สามารถพูดคุยได้เลย');
+        setIsFriend(true);
+      } else {
+        alert(data.message);
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  // 🌟 ฟังก์ชันค้นหาและเพิ่มเพื่อนจากเมนู (Username อื่น)
+  const handleSearchAddFriend = async () => {
     if(!searchUsername.trim()) return;
-    alert(`ส่งคำขอเพิ่มเพื่อนไปยัง Username: ${searchUsername} เรียบร้อยแล้ว`);
-    setShowSearchModal(false);
-    setSearchUsername('');
-    // TODO: Fetch API INSERT ลงตาราง ChatFriends
+    try {
+      const res = await fetch(`${API_URL}/api/chat/add-friend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ me: myUsername, friendUsername: searchUsername })
+      });
+      const data = await res.json();
+      alert(data.message);
+      setShowSearchModal(false);
+      setSearchUsername('');
+    } catch (err) { console.error(err); }
   };
 
   const formatTime = (date) => {
+    if(!date) return '';
     return new Intl.DateTimeFormat('th-TH', { hour: '2-digit', minute: '2-digit' }).format(new Date(date));
   };
 
@@ -99,7 +222,7 @@ export default function Chat() {
     <div className="chat-wrapper">
       <div className="chat-page">
         
-        {/* 🌟 Top Navbar (มีแจ้งเตือนและเมนูเพื่อน) */}
+        {/* Top Navbar */}
         <div className="chat-navbar">
           <div className="chat-nav-left">
             <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}>
@@ -107,25 +230,24 @@ export default function Chat() {
             </button>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <img src={partnerInfo.profileImageUrl} alt="profile" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
+              <div style={{ position: 'relative' }}>
+                <img src={partnerInfo.profileImageUrl} alt="profile" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
+                {partnerInfo.isOnline && (
+                  <div style={{ position: 'absolute', bottom: 0, right: 0, width: '12px', height: '12px', background: '#10B981', border: '2px solid rgba(11, 14, 20, 0.95)', borderRadius: '50%' }}></div>
+                )}
+              </div>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1rem', color: '#fff' }}>{partnerInfo.username}</h3>
                 <p style={{ margin: 0, fontSize: '0.75rem', color: partnerInfo.isOnline ? '#10B981' : '#64748B' }}>
-                  {partnerInfo.isOnline ? 'ออนไลน์' : 'ออฟไลน์'}
+                  {isFriend ? (partnerInfo.isOnline ? 'ออนไลน์' : 'ออฟไลน์') : 'ยังไม่ได้เป็นเพื่อน'}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="chat-nav-right">
-            {/* 🌟 ไอคอนแจ้งเตือนข้อความ (โชว์ตัวเลขสีแดง) */}
-            <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => alert('ไปหน้าแชทรวม')}>
+            <div style={{ position: 'relative', cursor: 'pointer' }}>
               <Bell size={22} color="#CFA348" />
-              {unreadCount > 0 && (
-                <div style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#EF4444', color: '#fff', fontSize: '0.6rem', width: '16px', height: '16px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>
-                  {unreadCount}
-                </div>
-              )}
             </div>
 
             <button onClick={() => setShowMenu(!showMenu)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}>
@@ -134,12 +256,12 @@ export default function Chat() {
 
             {/* Dropdown Menu */}
             {showMenu && (
-              <div style={{ position: 'absolute', top: '40px', right: '0', background: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '10px 0', width: '180px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
+              <div style={{ position: 'absolute', top: '40px', right: '0', background: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '10px 0', width: '180px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', zIndex: 30 }}>
                 <button style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 15px', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }} onClick={() => { setShowSearchModal(true); setShowMenu(false); }}>
                   <Search size={16} color="#94A3B8" /> ค้นหา Username
                 </button>
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', margin: '5px 0' }}></div>
-                <button style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 15px', background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }} onClick={() => { alert('บล็อกผู้ใช้นี้เรียบร้อย'); setShowMenu(false); }}>
+                <button style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 15px', background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }} onClick={() => { alert('กำลังพัฒนาระบบบล็อก'); setShowMenu(false); }}>
                   <Ban size={16} color="#EF4444" /> บล็อกผู้ใช้นี้
                 </button>
               </div>
@@ -147,24 +269,62 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* 🌟 Chat Messages */}
+        {/* Chat Messages */}
         <div className="chat-messages">
-          {messages.map((msg) => (
-            <div key={msg.id} className={`msg-wrapper ${msg.sender === myUsername ? 'items-end' : 'items-start'}`}>
-              <div className={`msg-bubble ${msg.sender === myUsername ? 'msg-me' : 'msg-partner'}`}>
-                {msg.text}
+          {messages.length === 0 && isFriend && (
+             <div style={{ textAlign: 'center', color: '#64748B', marginTop: '20px', fontSize: '0.85rem' }}>เริ่มการสนทนากับ {partnerInfo.username}</div>
+          )}
+
+          {messages.map((msg) => {
+            // ดักจับ Event ลบข้อความที่ส่งมาจาก Socket
+            if(msg.type === 'delete') {
+                setMessages(prev => prev.map(m => m.id === msg.msgId ? { ...m, isDeleted: true } : m));
+                return null;
+            }
+
+            const isMe = msg.sender === myUsername;
+            return (
+              <div key={msg.id} className={`msg-wrapper ${isMe ? 'items-end' : 'items-start'}`}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexDirection: isMe ? 'row-reverse' : 'row' }}>
+                  
+                  {/* กล่องข้อความ / รูปภาพ */}
+                  <div className={`msg-bubble ${msg.isDeleted ? '' : (isMe ? 'msg-me' : 'msg-partner')}`} style={{ 
+                    padding: (msg.imageUrl && !msg.isDeleted) ? '4px' : '12px 16px',
+                    background: msg.isDeleted ? 'transparent' : undefined,
+                    border: msg.isDeleted ? '1px dashed #64748B' : undefined,
+                    color: msg.isDeleted ? '#64748B' : undefined,
+                    boxShadow: msg.isDeleted ? 'none' : undefined
+                  }}>
+                    {msg.isDeleted ? (
+                      <span style={{ fontStyle: 'italic', fontSize: '0.85rem' }}>🚫 ข้อความนี้ถูกลบแล้ว</span>
+                    ) : (
+                      msg.imageUrl ? (
+                        <img src={msg.imageUrl} alt="attachment" style={{ maxWidth: '100%', borderRadius: '12px', border: `1px solid ${isMe ? '#CFA348' : '#1E293B'}`, display: 'block' }} />
+                      ) : (
+                        <span>{msg.text}</span>
+                      )
+                    )}
+                  </div>
+
+                  {/* ปุ่มถังขยะ (โชว์เฉพาะข้อความที่เราส่งและยังไม่ลบ) */}
+                  {isMe && !msg.isDeleted && (
+                    <button onClick={() => handleDeleteMessage(msg.id)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '5px' }}>
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+                <span style={{ fontSize: '0.7rem', color: '#64748B', padding: '0 5px' }}>{formatTime(msg.timestamp)}</span>
               </div>
-              <span style={{ fontSize: '0.7rem', color: '#64748B', padding: '0 5px' }}>{formatTime(msg.timestamp)}</span>
-            </div>
-          ))}
+            );
+          })}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* 🌟 Input Area (เช็คสถานะความเป็นเพื่อน) */}
+        {/* Input Area */}
         <div className="chat-input-area">
           {isFriend ? (
             <form onSubmit={handleSendMessage} className="chat-form">
-              <input type="file" id="chatUpload" style={{ display: 'none' }} />
+              <input type="file" accept="image/*" id="chatUpload" style={{ display: 'none' }} onChange={handleImageUpload} />
               <label htmlFor="chatUpload" style={{ color: '#94A3B8', cursor: 'pointer', padding: '5px' }}>
                 <Paperclip size={20} />
               </label>
@@ -183,14 +343,14 @@ export default function Chat() {
             <div className="not-friend-alert">
               <UserPlus size={30} color="#CFA348" style={{ margin: '0 auto 10px auto' }} />
               <p style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: '#fff' }}>ต้องเป็นเพื่อนกันก่อนถึงจะพูดคุยได้</p>
-              <button onClick={() => setIsFriend(true)} style={{ background: '#CFA348', color: '#000', border: 'none', padding: '10px 20px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', width: '100%' }}>
-                ส่งคำขอเป็นเพื่อน
+              <button onClick={handleAddDirectFriend} style={{ background: '#CFA348', color: '#000', border: 'none', padding: '10px 20px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', width: '100%' }}>
+                ส่งคำขอเพิ่ม {partnerInfo.username} เป็นเพื่อน
               </button>
             </div>
           )}
         </div>
 
-        {/* 🌟 Modal ค้นหาเพื่อนด้วย Username */}
+        {/* Modal ค้นหาเพื่อน */}
         {showSearchModal && (
           <div className="chat-modal-overlay">
             <div className="chat-modal-box">
@@ -209,7 +369,7 @@ export default function Chat() {
               
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button onClick={() => setShowSearchModal(false)} style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>ยกเลิก</button>
-                <button onClick={handleAddFriend} style={{ flex: 1, padding: '10px', background: '#CFA348', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>เพิ่มเพื่อน</button>
+                <button onClick={handleSearchAddFriend} style={{ flex: 1, padding: '10px', background: '#CFA348', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>เพิ่มเพื่อน</button>
               </div>
             </div>
           </div>
