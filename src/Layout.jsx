@@ -66,7 +66,7 @@ export default function Layout({ userProfile }) {
     { path: '/assets', icon: <Briefcase size={22} color="#10B981" />, label: 'Assets' },
     { path: '/market', icon: <TrendingUp size={22} color="#F59E0B" />, label: 'Market' },
     { path: '/team', icon: <Users size={22} color="#8B5CF6" />, label: 'Team' },
-    { path: '/chat', icon: <MessageCircle size={22} color="#EC4899" />, label: 'Chat' },
+    { path: '/chat-list', icon: <MessageCircle size={22} color="#EC4899" />, label: 'Chat' },
   ];
 
   const displayImage = localProfile?.ProfileImageUrl || userProfile?.image || 'https://via.placeholder.com/40';

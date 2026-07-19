@@ -27,6 +27,7 @@ import P2POrderDetail from './pages/P2POrderDetail';
 import MyP2POrders from './pages/MyP2POrders';
 import History from './pages/History'; 
 import ProfileMyTeam from './pages/ProfileMyTeam';
+import ChatList from './pages/ChatList';
 
 
 function App() {
@@ -106,7 +107,10 @@ function App() {
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/assets" element={<Assets />} />
             <Route path="/market" element={<Market />} />
-            <Route path="/chat" element={<Chat />} />
+            {/* หน้าแรกของแชท โชว์รายชื่อเพื่อน (ดึงมาจากเมนูด้านล่าง) */}
+            <Route path="/chat-list" element={<ChatList />} />
+            {/* หน้าห้องแชทส่วนตัว (ต้องมี :username ต่อท้ายเพื่อให้ Chat.jsx ดึงชื่อไปใช้ได้) */}
+            <Route path="/chat/:username" element={<Chat />} />
             <Route path="/play-history" element={<PlayHistory />} />
             <Route path="/deposit" element={<Deposit />} />
             <Route path="/addusersname" element={<AddUsersName />} />
