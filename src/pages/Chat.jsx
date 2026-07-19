@@ -215,7 +215,7 @@ export default function Chat() {
     }
   };
 
-  // 🌟 ฟังก์ชันเพิ่มเพื่อน (ใช้จากการกดปุ่มเมื่อยังไม่เป็นเพื่อน)
+ // 🌟 ฟังก์ชันเพิ่มเพื่อน (ใช้จากการกดปุ่มเมื่อยังไม่เป็นเพื่อน)
   const handleAddDirectFriend = async () => {
     try {
       const res = await fetch(`${API_URL}/api/chat/add-friend`, {
@@ -225,8 +225,11 @@ export default function Chat() {
       });
       const data = await res.json();
       if (data.success) {
-        alert('เพิ่มเพื่อนสำเร็จ! สามารถพูดคุยได้เลย');
+        alert('ส่งคำขอเพิ่มเพื่อนสำเร็จ!');
         setIsFriend(true);
+        
+        // 🌟 สะกิดเพื่อนให้อัปเดตหน้าจอทันที!
+        socket?.emit('send_message', { room: partnerInfo.username, type: 'refresh' });
       } else {
         alert(data.message);
       }
