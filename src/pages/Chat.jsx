@@ -13,6 +13,8 @@ export default function Chat() {
   const messagesEndRef = useRef(null);
   // 🌟 2. เพิ่ม State สำหรับเก็บรูปที่ต้องการขยายดู
   const [selectedImage, setSelectedImage] = useState(null);
+  // 🌟 เพิ่ม State เก็บรูปภาพรอส่ง (Preview)
+  const [previewImages, setPreviewImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [myUsername, setMyUsername] = useState(''); 
   const [partnerInfo, setPartnerInfo] = useState({ username: username, profileImageUrl: '', isOnline: true });
@@ -212,29 +214,59 @@ const compressImage = (file) => {
     } catch(err) { console.error("Save msg error", err); }
   };
 
-  // 🌟 ฟังก์ชันส่งรูปภาพ (รองรับทีละหลายรูป)
-  const handleImageUpload = async (e) => {
-    // ดึงไฟล์ทั้งหมดที่ผู้ใช้เลือก (หลายไฟล์ได้)
+  // 🌟 1. ฟังก์ชันเมื่อกดเลือกรูป (เช็คจำนวน + บีบอัดเก็บไว้ใน State ก่อน)
+  const handleSelectImages = async (e) => {
     const files = Array.from(e.target.files);
-    if (!files.length || !isFriend) return;
+    if (!files.length) return;
 
-    for (let i = 0; i < files.length; i++) {
-      try {
+    // 🔒 ป้องกันคนส่งรัวๆ: จำกัดสูงสุด 4 รูปต่อครั้ง
+    const MAX_IMAGES = 4;
+    if (files.length > MAX_IMAGES) {
+      alert(`เพื่อความเสถียรของระบบ กรุณาส่งรูปสูงสุดไม่เกิน ${MAX_IMAGES} รูปต่อครั้งครับ`);
+      e.target.value = null;
+      return;
+    }
+
+    try {
+      const compressedList = [];
+      for (let i = 0; i < files.length; i++) {
+        // บีบอัดรูปเตรียมไว้
         const compressedBase64 = await compressImage(files[i]);
+        compressedList.push(compressedBase64);
+      }
+      // นำรูปไปใส่ใน State เพื่อแสดงหน้า Preview
+      setPreviewImages(compressedList);
+    } catch(err) { 
+      console.error("Compress error:", err); 
+      alert("เกิดข้อผิดพลาดในการอ่านไฟล์รูปภาพ");
+    }
+    
+    e.target.value = null; // เคลียร์ค่า input
+  };
+
+  // 🌟 2. ฟังก์ชันกดยืนยันส่งรูปจากหน้า Preview
+  const handleConfirmSendImages = async () => {
+    const imgsToSend = [...previewImages];
+    setPreviewImages([]); // ปิดหน้า Preview ทันทีเพื่อความลื่นไหล
+
+    for (let i = 0; i < imgsToSend.length; i++) {
+      try {
         const newMessage = {
-          id: Date.now() + i, // ป้องกัน ID ซ้ำเวลากดส่งรัวๆ
+          id: Date.now() + i, // บวก i เพื่อป้องกัน ID ชนกัน
           room: room,
           sender: myUsername,
           text: null,
-          imageUrl: compressedBase64,
+          imageUrl: imgsToSend[i],
           timestamp: new Date(),
           isDeleted: false,
           isRead: false
         };
         
+        // แสดงบนจอทันที และส่ง Socket
         setMessages((prev) => [...prev, newMessage]);
         socket?.emit('send_message', newMessage);
 
+        // บันทึกลงฐานข้อมูล
         await fetch(`${API_URL}/api/chat/save`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -244,8 +276,6 @@ const compressImage = (file) => {
         console.error("Upload error:", err); 
       }
     }
-    
-    e.target.value = null; // เคลียร์ค่า input
   };
 
   // 🌟 ฟังก์ชันขอลบข้อความ (Soft Delete)
@@ -394,7 +424,6 @@ return (
            <div style={{ textAlign: 'center', color: '#64748B', marginTop: '20px', fontSize: '0.85rem' }}>เริ่มการสนทนากับ {partnerInfo.username}</div>
         )}
 
-        {/* 🌟 ใช้ฟังก์ชันดักจับกลุ่มรูปภาพ */}
         {(() => {
           const elements = [];
           let imgGroup = [];
@@ -412,7 +441,7 @@ return (
                     {/* กล่อง Grid สำหรับรูปภาพ */}
                     <div style={{
                       display: 'grid',
-                      gridTemplateColumns: imgGroup.length > 1 ? 'repeat(2, 1fr)' : '1fr', // 2 คอลัมน์เมื่อมีหลายรูป
+                      gridTemplateColumns: imgGroup.length > 1 ? 'repeat(2, 1fr)' : '1fr',
                       gap: '5px',
                       maxWidth: '260px' 
                     }}>
@@ -421,11 +450,11 @@ return (
                           <img
                             src={msg.imageUrl}
                             alt="attachment"
-                            onClick={() => setSelectedImage(msg.imageUrl)} /* 🌟 คลิกเพื่อขยายรูปลง State */
+                            onClick={() => setSelectedImage(msg.imageUrl)} 
                             style={{
                               width: imgGroup.length > 1 ? '120px' : '160px',
                               height: imgGroup.length > 1 ? '120px' : '160px',
-                              objectFit: 'cover', // ตัดขอบให้สี่เหลี่ยมพอดี
+                              objectFit: 'cover',
                               borderRadius: '12px',
                               border: `1px solid ${isMe ? '#CFA348' : '#1E293B'}`,
                               cursor: 'pointer',
@@ -453,7 +482,6 @@ return (
             }
           };
 
-          // แยกแยะข้อความกับรูปภาพ
           messages.forEach((msg) => {
             if (msg.isDeleted) {
               flushImgGroup();
@@ -466,7 +494,6 @@ return (
                 </div>
               );
             } else if (msg.imageUrl) {
-              // จัดกลุ่มรูปภาพที่ส่งติดกัน
               if (imgGroup.length > 0 && imgGroup[imgGroup.length - 1].sender !== msg.sender) {
                 flushImgGroup();
               }
@@ -512,8 +539,8 @@ return (
       }}>
         {isFriend ? (
           <form onSubmit={handleSendMessage} className="chat-form">
-            {/* 🌟 ใส่ multiple ตรงนี้เพื่อให้เลือกไฟล์ได้ทีละหลายรูป */}
-            <input type="file" accept="image/*" multiple id="chatUpload" style={{ display: 'none' }} onChange={handleImageUpload} />
+            {/* 🌟 กดเลือกไฟล์จะไปเรียก handleSelectImages แทน เพื่อเปิดหน้า Preview */}
+            <input type="file" accept="image/*" multiple id="chatUpload" style={{ display: 'none' }} onChange={handleSelectImages} />
             <label htmlFor="chatUpload" style={{ color: '#94A3B8', cursor: 'pointer', padding: '5px' }}>
               <Paperclip size={20} />
             </label>
@@ -546,15 +573,10 @@ return (
           background: 'rgba(0,0,0,0.95)', zIndex: 9999,
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
         }}>
-          {/* ปุ่มปิด X มุมขวาบน */}
           <button onClick={() => setSelectedImage(null)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: '10px' }}>
             <X size={32} />
           </button>
-          
-          {/* รูปภาพขยายเต็มจอ (ไม่ให้เสียสัดส่วน) */}
           <img src={selectedImage} alt="fullscreen" style={{ maxWidth: '95%', maxHeight: '75vh', objectFit: 'contain', borderRadius: '8px' }} />
-          
-          {/* ปุ่มบันทึกรูปภาพ (Download) */}
           <a href={selectedImage} download={`9Plus_Chat_Image_${Date.now()}.jpg`} style={{ 
             marginTop: '30px', background: '#CFA348', color: '#000', padding: '12px 30px', 
             borderRadius: '30px', textDecoration: 'none', fontWeight: 'bold', 
@@ -562,6 +584,43 @@ return (
           }}>
             <Download size={20} /> บันทึกรูปภาพ
           </a>
+        </div>
+      )}
+
+      {/* 🌟 5. Popup Preview: แสดงรูปก่อนส่ง */}
+      {previewImages.length > 0 && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          background: 'rgba(11, 14, 20, 0.95)', backdropFilter: 'blur(10px)', zIndex: 10000,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <h3 style={{ color: '#fff', marginBottom: '10px' }}>ตัวอย่างรูปภาพก่อนส่ง</h3>
+          <p style={{ color: '#94A3B8', fontSize: '0.9rem', marginBottom: '25px' }}>จำนวน {previewImages.length}/4 รูป</p>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: previewImages.length > 1 ? 'repeat(2, 1fr)' : '1fr',
+            gap: '15px',
+            maxWidth: '90%',
+            maxHeight: '60vh',
+            overflowY: 'auto',
+            padding: '10px'
+          }}>
+            {previewImages.map((src, idx) => (
+               <div key={idx} style={{ position: 'relative' }}>
+                 <img src={src} alt="preview" style={{ width: '100%', height: previewImages.length > 1 ? '160px' : '250px', objectFit: 'cover', borderRadius: '12px', border: '2px solid #CFA348', boxShadow: '0 5px 15px rgba(0,0,0,0.3)' }} />
+               </div>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: '20px', marginTop: '40px' }}>
+            <button onClick={() => setPreviewImages([])} style={{ padding: '12px 30px', borderRadius: '30px', border: '1px solid rgba(239, 68, 68, 0.5)', background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', fontWeight: 'bold', cursor: 'pointer', transition: '0.3s' }}>
+               ยกเลิก
+            </button>
+            <button onClick={handleConfirmSendImages} style={{ padding: '12px 30px', borderRadius: '30px', border: 'none', background: '#CFA348', color: '#000', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 15px rgba(207, 163, 72, 0.4)', transition: '0.3s' }}>
+               <Send size={18} /> ยืนยันการส่ง
+            </button>
+          </div>
         </div>
       )}
 
