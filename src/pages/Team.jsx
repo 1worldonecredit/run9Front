@@ -9,19 +9,17 @@ export default function Team() {
   // ข้อมูลส่วนตัว
   const [myProfile, setMyProfile] = useState({
     username: '',
-    profileImageUrl: 'https://i.pravatar.cc/150?img=11', // เปลี่ยนตรงนี้ด้วย
+    profileImageUrl: '',
     currencySymbol: '฿',
     walletBalance: 0,
     totalCommission: 0,
     monthlyCommission: 0
   });
 
-
-  // รูปปกพื้นหลัง (ตั้งค่ารูปเริ่มต้นที่ดูหรูหราไว้ก่อน)
   const [coverImage, setCoverImage] = useState('/BG2.jpg');
   const [teamMembers, setTeamMembers] = useState([]);
 
- useEffect(() => {
+  useEffect(() => {
     const savedProfileStr = localStorage.getItem('userProfile');
     let currentUsername = '';
     
@@ -33,7 +31,7 @@ export default function Team() {
     }
 
     if (currentUsername) {
-      // 🌟 1. ดึงข้อมูล Profile ของตัวเอง (สไตล์เดียวกับ Navbar)
+      // 1. ดึงข้อมูล Profile ของตัวเอง (รวม Wallet)
       fetch(`https://api.run9.app/api/user/profile-stats?username=${currentUsername}`)
         .then(res => res.json())
         .then(data => {
@@ -41,10 +39,9 @@ export default function Team() {
             setMyProfile(prev => ({
               ...prev,
               username: data.profile.Username || data.profile.username || currentUsername,
-              // 🌟 ถ้าไม่มีรูป ให้สร้างรูปโปรไฟล์จากชื่ออัตโนมัติ (โลโก้สีทอง)
               profileImageUrl: data.profile.ProfileImageUrl || data.profile.profileImageUrl || `https://ui-avatars.com/api/?name=${currentUsername}&background=CFA348&color=fff&size=150`, 
-              currencySymbol: data.profile.currencySymbol || '฿',
-              walletBalance: data.profile.walletBalance || 0,
+              currencySymbol: data.profile.Currency || data.profile.currencySymbol || '฿',
+              walletBalance: data.profile.Balance || data.profile.walletBalance || 0,
               totalCommission: data.profile.totalCommission || 0,
               monthlyCommission: data.profile.monthlyCommission || 0
             }));
@@ -52,7 +49,7 @@ export default function Team() {
         })
         .catch(err => console.error("Error fetching profile:", err));
 
-      // 🌟 2. ดึงข้อมูลทีมงาน
+      // 2. ดึงข้อมูลทีมงาน
       fetch(`https://api.run9.app/api/team/my-team/${currentUsername}`)
         .then(res => res.json())
         .then(data => {
@@ -67,20 +64,17 @@ export default function Team() {
     }
   }, []);
 
-  // 🌟 ฟังก์ชันจัดการอัปโหลดเปลี่ยนรูปปก (Cover Image)
   const handleCoverUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setCoverImage(reader.result); // แสดงผลรูปใหม่ทันที
-        // TODO: ตรงนี้คุณสามารถเพิ่มโค้ดเพื่อยิง API บันทึกรูปลง Database ได้ในอนาคต
+        setCoverImage(reader.result);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // คำนวณอายุสมาชิก
   const calculateTenure = (dateString) => {
     if (!dateString) return 'ไม่ทราบข้อมูล';
     const regDate = new Date(dateString);
@@ -139,55 +133,43 @@ export default function Team() {
   return (
     <div className="pro-page-wrapper">
       
-      {/* 🌟 Dynamic Blurred Background */}
       <div className="pro-page-bg" style={{ backgroundImage: `url(${coverImage})` }}></div>
       <div className="pro-page-overlay"></div>
 
-      {/* 🌟 Top Cover Section */}
       <div className="pro-cover-section">
         <img src={coverImage} alt="Cover" className="pro-cover-img" />
-        
-        {/* ปุ่มอัปโหลดรูปปกซ่อนอยู่มุมขวาบน */}
         <input type="file" accept="image/*" id="coverUpload" style={{ display: 'none' }} onChange={handleCoverUpload} />
         <label htmlFor="coverUpload" className="pro-upload-cover-btn">
           <Camera size={18} />
         </label>
       </div>
 
-      {/* 🌟 Profile Picture (ทับเส้น) */}
       <div className="pro-profile-wrapper">
         <img src={myProfile.profileImageUrl} alt="Profile" className="pro-profile-img" />
       </div>
 
-      {/* 🌟 Text Info */}
       <div className="pro-text-center">
         <h2 className="pro-name">{myProfile.username}</h2>
         <p className="pro-role">Soidao 9Plus Member</p>
       </div>
 
-      {/* 🌟 Stats Section (3 Columns) */}
       <div className="pro-stats-container">
         <div className="pro-stat-item">
           <p className="pro-stat-value">{new Intl.NumberFormat('th-TH', {notation: "compact", compactDisplay: "short"}).format(myProfile.walletBalance)}</p>
           <p className="pro-stat-label">ยอดเงิน</p>
         </div>
-        
         <div className="pro-stat-divider"></div>
-        
         <div className="pro-stat-item">
           <p className="pro-stat-value">{new Intl.NumberFormat('th-TH', {notation: "compact", compactDisplay: "short"}).format(myProfile.totalCommission)}</p>
           <p className="pro-stat-label">สะสมรวม</p>
         </div>
-
         <div className="pro-stat-divider"></div>
-        
         <div className="pro-stat-item">
           <p className="pro-stat-value">{new Intl.NumberFormat('th-TH', {notation: "compact", compactDisplay: "short"}).format(myProfile.monthlyCommission)}</p>
           <p className="pro-stat-label">เดือนนี้</p>
         </div>
       </div>
 
-      {/* 🌟 Action Buttons */}
       <div className="pro-actions">
         <button className="pro-btn-gold" onClick={handleSharePromo}>
           <Share2 size={18} /> แชร์โปรโมท
@@ -197,26 +179,29 @@ export default function Team() {
         </button>
       </div>
 
-      {/* 🌟 Team List Section */}
       <div className="pro-team-section">
         <h3 className="pro-section-title">ทีมงานของฉัน ({teamMembers.length})</h3>
         
         <div className="pro-team-list">
           {teamMembers.length > 0 ? (
-            teamMembers.map((member) => (
-              <div key={member.id} className="pro-team-item">
+            teamMembers.map((member, index) => (
+              <div key={member.Id || index} className="pro-team-item">
                 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flex: 1 }} onClick={() => navigate(`/profile-my-team/${member.username}`)}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flex: 1 }} onClick={() => navigate(`/profile-my-team/${member.Username || member.username}`)}>
                   <div className="team-member-avatar" style={{ width: '50px', height: '50px' }}>
-                    <img src={member.profileImageUrl} alt="team" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img 
+                      src={member.ProfileImageUrl || `https://ui-avatars.com/api/?name=${member.Username || member.username}&background=random&color=fff&size=150`} 
+                      alt="team" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
                   </div>
                   <div>
                     <h4 style={{ margin: '0 0 3px 0', fontSize: '1rem', color: '#fff' }}>
-                      {maskName(member.firstName, member.lastName, member.username)}
+                      {maskName(member.FirstName || member.firstName, member.LastName || member.lastName, member.Username || member.username)}
                     </h4>
-                    <p style={{ margin: '0 0 3px 0', fontSize: '0.75rem', color: '#D1D5DB' }}>ประเทศ: {member.country || 'ไม่ระบุ'}</p>
+                    <p style={{ margin: '0 0 3px 0', fontSize: '0.75rem', color: '#D1D5DB' }}>ประเทศ: {member.Country || member.country || 'ไม่ระบุ'}</p>
                     <p style={{ margin: 0, fontSize: '0.75rem', color: '#CFA348', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <CalendarClock size={12} /> {calculateTenure(member.registeredAt)}
+                      <CalendarClock size={12} /> {calculateTenure(member.RegistrationDateTime || member.registeredAt)}
                     </p>
                   </div>
                 </div>
@@ -225,13 +210,12 @@ export default function Team() {
                   <div style={{ textAlign: 'right' }}>
                     <p style={{ margin: '0 0 2px 0', fontSize: '0.7rem', color: '#D1D5DB' }}>ค่านายหน้า</p>
                     <span style={{ color: '#CFA348', fontWeight: 'bold', fontSize: '0.9rem' }}>
-                      +{myProfile.currencySymbol}{new Intl.NumberFormat('th-TH').format(member.commissionEarned)}
+                      +{myProfile.currencySymbol}{new Intl.NumberFormat('th-TH').format(member.commissionEarned || 0)}
                     </span>
                   </div>
                   
-                  {/* ปุ่มแชทสีทอง */}
                   <button 
-                    onClick={(e) => { e.stopPropagation(); navigate(`/chat/${member.username}`); }}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/chat/${member.Username || member.username}`); }}
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '38px', height: '38px', borderRadius: '12px', background: 'rgba(207, 163, 72, 0.15)', color: '#CFA348', border: '1px solid rgba(207, 163, 72, 0.3)', cursor: 'pointer' }}
                   >
                     <MessageCircle size={18} />
