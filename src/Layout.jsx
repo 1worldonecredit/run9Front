@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
-import { Gamepad, ShoppingCart, Bell, Home, Briefcase, TrendingUp, MessageCircle, Users, Menu, X, LogOut } from 'lucide-react';
+import { Gamepad, ShoppingCart, Bell, Home, Briefcase, TrendingUp, MessageCircle, Users, Menu, X, LogOut,useState, useEffect } from 'lucide-react';
 import './layout.css'; 
 
 export default function Layout({ userProfile }) {
+ // 🌟 เพิ่ม State เก็บจำนวนแจ้งเตือน
+  const [totalUnread, setTotalUnread] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -52,6 +54,27 @@ export default function Layout({ userProfile }) {
         .catch(err => console.error("Error fetching notification count:", err));
     }
   }, [username, location.pathname]); 
+  // 🌟 เพิ่ม useEffect ดึงข้อมูลแจ้งเตือน
+  useEffect(() => {
+    const fetchUnread = async () => {
+      const savedProfileStr = localStorage.getItem('userProfile');
+      if (!savedProfileStr) return;
+      try {
+        const me = JSON.parse(savedProfileStr).username;
+        if (!me) return;
+        const res = await fetch(`https://api.run9.app/api/chat/unread-total/${me}`);
+        const data = await res.json();
+        if (data.success) {
+          setTotalUnread(data.total);
+        }
+      } catch (err) {}
+    };
+
+    fetchUnread();
+    // ให้มันรีเฟรชเช็คข้อความใหม่ทุกๆ 3 วินาที
+    const interval = setInterval(fetchUnread, 3000); 
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = () => {
     if(window.confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
