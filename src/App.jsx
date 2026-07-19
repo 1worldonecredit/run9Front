@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate} from 'react-router-dom';
 import SoiDaoGame from './pages/SoiDaoGame';
 
 // -------------------------------------------------------------
@@ -109,6 +109,8 @@ function App() {
             <Route path="/market" element={<Market />} />
             {/* หน้าแรกของแชท โชว์รายชื่อเพื่อน (ดึงมาจากเมนูด้านล่าง) */}
             <Route path="/chat-list" element={<ChatList />} />
+            {/* 🌟 เพิ่มบรรทัดนี้: ถ้ามีใครหลงเข้ามาที่ /chat ให้เด้งไปที่ /chat-list ทันที */}
+            <Route path="/chat" element={<Navigate to="/chat-list" replace />} />
             {/* หน้าห้องแชทส่วนตัว (ต้องมี :username ต่อท้ายเพื่อให้ Chat.jsx ดึงชื่อไปใช้ได้) */}
             <Route path="/chat/:username" element={<Chat />} />
             <Route path="/play-history" element={<PlayHistory />} />
