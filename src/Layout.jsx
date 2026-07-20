@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
-import { Gamepad, ShoppingCart, Bell, Home, Briefcase, TrendingUp, MessageCircle, Users, Menu, X, LogOut } from 'lucide-react';
+// 🌟 เพิ่มไอคอน Store และ ShoppingBag เข้ามาครับ
+import { Gamepad, ShoppingCart, Bell, Home, Briefcase, TrendingUp, MessageCircle, Users, Menu, X, LogOut, Store, ShoppingBag } from 'lucide-react';
 import './layout.css'; 
 
 export default function Layout({ userProfile }) {
- // 🌟 เพิ่ม State เก็บจำนวนแจ้งเตือน
+  // 🌟 เพิ่ม State เก็บจำนวนแจ้งเตือน
   const [totalUnread, setTotalUnread] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,6 +55,7 @@ export default function Layout({ userProfile }) {
         .catch(err => console.error("Error fetching notification count:", err));
     }
   }, [username, location.pathname]); 
+
   // 🌟 เพิ่ม useEffect ดึงข้อมูลแจ้งเตือน
   useEffect(() => {
     const fetchUnread = async () => {
@@ -96,6 +98,19 @@ export default function Layout({ userProfile }) {
   const displayName = localProfile?.FirstName ? `${localProfile.FirstName} ${localProfile.LastName}`.trim() : (userProfile?.name || username || 'ยังไม่ได้ระบุชื่อ');
   const displayPhone = localProfile?.PhoneNumber || userProfile?.phone || 'ยังไม่ได้ระบุเบอร์โทร';
 
+  // ==========================================
+  // 🌟 โลจิกสำหรับระบบร้านค้า (Vendor Onboarding)
+  // ==========================================
+  // เช็คว่าโปรไฟล์กรอกครบไหม (อนุโลมให้เทสได้ก่อน ถ้าระบบฐานข้อมูลสมุดบัญชีเสร็จให้เพิ่ม && localProfile?.BankAccount เข้าไป)
+  const isProfileComplete = localProfile?.FirstName && localProfile?.LastName; 
+  
+  // สถานะร้านค้า (ดึงจาก localProfile ตอนนี้สมมติให้ทดสอบดูก่อนได้)
+  const shopStatus = localProfile?.shopStatus || null; // null, 'pending', 'revision', 'approved'
+  
+  const canRegisterShop = isProfileComplete && shopStatus !== 'approved';
+  const hasApprovedShop = shopStatus === 'approved';
+  // ==========================================
+
   return (
     <div className="frontend-layout-container">
       
@@ -120,13 +135,12 @@ export default function Layout({ userProfile }) {
               key={item.path} 
               to={item.path} 
               className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} /* 🌟 จัด layout */
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} 
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 {item.icon} <span>{item.label}</span>
               </div>
 
-              {/* 🌟 เพิ่มแจ้งเตือนแชทสำหรับ Sidebar คอมพิวเตอร์ */}
               {item.label === 'Chat' && totalUnread > 0 && (
                 <div style={{
                   background: '#EF4444', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', 
@@ -139,6 +153,36 @@ export default function Layout({ userProfile }) {
             </Link>
           ))}
           
+          <div className="sidebar-divider"></div>
+
+          {/* 🌟 เมนูสมัครเปิดร้านค้า (แทรกตรงนี้ใน Sidebar) */}
+          {canRegisterShop && (
+            <Link 
+              to="/register-shop" 
+              className={`sidebar-item ${location.pathname === '/register-shop' ? 'active' : ''}`}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#CFA348', border: '1px dashed rgba(207,163,72,0.4)', margin: '0 15px', padding: '10px 15px', borderRadius: '10px' }} 
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Store size={22} color="#CFA348" /> 
+                <span style={{ fontWeight: 'bold' }}>สมัครเปิดร้านค้า</span>
+              </div>
+              {shopStatus === 'pending' && <span style={{ fontSize: '0.65rem', background: '#F59E0B', color: '#fff', padding: '2px 6px', borderRadius: '10px' }}>รอตรวจ</span>}
+              {shopStatus === 'revision' && <span style={{ fontSize: '0.65rem', background: '#EF4444', color: '#fff', padding: '2px 6px', borderRadius: '10px' }}>แก้ไข</span>}
+            </Link>
+          )}
+
+          {/* 🌟 ถ้าร้านผ่านอนุมัติแล้ว ให้โชว์ My Shop ใน Sidebar ด้วย */}
+          {hasApprovedShop && (
+            <Link 
+              to="/my-shop" 
+              className={`sidebar-item ${location.pathname === '/my-shop' ? 'active' : ''}`}
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#CFA348', margin: '0 15px', padding: '10px 15px' }} 
+            >
+              <ShoppingBag size={22} color="#CFA348" /> 
+              <span style={{ fontWeight: 'bold' }}>My Shop</span>
+            </Link>
+          )}
+
           <div className="sidebar-divider"></div>
 
           <button className="sidebar-item logout-btn" onClick={handleLogout}>
@@ -176,7 +220,6 @@ export default function Layout({ userProfile }) {
             <Gamepad size={32} className="nav-icon game-icon-glow" onClick={() => navigate('/game')} />
             <ShoppingCart size={24} className="nav-icon" onClick={() => navigate('/cart')} />
             
-            {/* 🌟 ไอคอนกระดิ่งพร้อม Badge ตัวเลขแจ้งเตือน */}
             <div 
               style={{ position: 'relative', display: 'flex', alignItems: 'center', cursor: 'pointer' }} 
               onClick={() => navigate('/notifications')}
@@ -203,18 +246,31 @@ export default function Layout({ userProfile }) {
 
         {/* Bottom Navbar (Mobile) */}
         {isMobile && (
-          <div className="bottom-navbar">
+          // 🌟 ทำให้ Bottom Navbar สไลด์เลื่อนซ้ายขวาได้
+          <div className="bottom-navbar" style={{ 
+            display: 'flex', 
+            overflowX: 'auto', 
+            whiteSpace: 'nowrap', 
+            gap: '15px', 
+            padding: '10px 15px',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none', 
+            msOverflowStyle: 'none' 
+          }}>
+            <style>
+              {`.bottom-navbar::-webkit-scrollbar { display: none; }`}
+            </style>
+
             {navItems.map(item => (
               <Link 
                 key={item.path} 
                 to={item.path} 
                 className={`bottom-nav-item ${location.pathname === item.path ? 'active' : ''}`}
-                style={{ position: 'relative' }} /* 🌟 1. เพิ่ม relative ตรงนี้เพื่อให้จุดแดงลอยอยู่บนไอคอนได้ */
+                style={{ position: 'relative', minWidth: '60px' /* 🌟 ล็อคขนาดไม่ให้ปุ่มหดตัวตอนสไลด์ */ }} 
               >
                 {React.cloneElement(item.icon, { color: location.pathname === item.path ? item.icon.props.color : '#6C7280' })}
                 <span>{item.label}</span>
 
-                {/* 🌟 2. เพิ่มเงื่อนไข: ถ้าเป็นปุ่ม Chat และมีข้อความเข้า ให้แสดงจุดแดง */}
                 {item.label === 'Chat' && totalUnread > 0 && (
                   <div style={{
                     position: 'absolute', top: '2px', right: '15px', 
@@ -222,11 +278,24 @@ export default function Layout({ userProfile }) {
                     width: '18px', height: '18px', borderRadius: '50%', 
                     display: 'flex', justifyContent: 'center', alignItems: 'center'
                   }}>
-                    {totalUnread > 99 ? '99+' : totalUnread} {/* ถ้าเกิน 99 ให้โชว์ 99+ */}
+                    {totalUnread > 99 ? '99+' : totalUnread} 
                   </div>
                 )}
               </Link>
             ))}
+
+            {/* 🌟 ไอคอน My Shop โผล่มาที่ Bottom Navbar เมื่อร้านผ่านอนุมัติ */}
+            {hasApprovedShop && (
+              <Link 
+                to="/my-shop" 
+                className={`bottom-nav-item ${location.pathname === '/my-shop' ? 'active' : ''}`}
+                style={{ position: 'relative', minWidth: '60px' }} 
+              >
+                <ShoppingBag size={22} color={location.pathname === '/my-shop' ? '#CFA348' : '#6C7280'} />
+                <span style={{ color: location.pathname === '/my-shop' ? '#CFA348' : '#6C7280' }}>My Shop</span>
+              </Link>
+            )}
+
           </div>
         )}
 
