@@ -204,28 +204,49 @@ export default function Chat() {
     } catch(err) { console.error("Save msg error", err); }
   };
 
+ // 🌟 1. ฟังก์ชันเมื่อกดเลือกรูป (อัปเดตแก้บัคบนมือถือ)
   const handleSelectImages = async (e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
+    // 🌟 ดักกรองเอาเฉพาะไฟล์รูปภาพเท่านั้น ป้องกันคนส่งไฟล์วิดีโอ/ไฟล์อื่นๆ
+    const files = Array.from(e.target.files).filter(file => file.type.startsWith('image/'));
+    
+    if (!files.length) {
+      if (e.target.files.length > 0) alert("ระบบรองรับเฉพาะไฟล์รูปภาพเท่านั้นครับ");
+      return;
+    }
+
     const MAX_IMAGES = 4;
     if (files.length > MAX_IMAGES) {
       alert(`เพื่อความเสถียรของระบบ กรุณาส่งรูปสูงสุดไม่เกิน ${MAX_IMAGES} รูปต่อครั้งครับ`);
       e.target.value = null;
       return;
     }
+
     try {
       const compressedList = [];
       for (let i = 0; i < files.length; i++) {
-        const compressedBase64 = await compressImage(files[i]);
-        compressedList.push(compressedBase64);
+        // ใช้ try-catch ครอบอีกชั้น เผื่อมือถืออ่านรูปไหนพัง จะได้ข้ามไปรูปอื่นได้
+        try {
+          const compressedBase64 = await compressImage(files[i]);
+          compressedList.push(compressedBase64);
+        } catch (err) {
+          console.error("Failed to compress image:", files[i].name, err);
+        }
       }
-      setPreviewImages(compressedList);
+      
+      if (compressedList.length > 0) {
+        setPreviewImages(compressedList);
+      } else {
+        alert("ขออภัย รูปแบบไฟล์รูปภาพนี้ไม่รองรับบนอุปกรณ์ของคุณ");
+      }
+      
     } catch(err) { 
       console.error("Compress error:", err); 
-      alert("เกิดข้อผิดพลาดในการอ่านไฟล์รูปภาพ");
+      alert("เกิดข้อผิดพลาดในการเตรียมไฟล์รูปภาพ ลองเลือกรูปใหม่อีกครั้งครับ");
     }
+    
     e.target.value = null; 
   };
+
 
   const handleConfirmSendImages = async () => {
     const imgsToSend = [...previewImages];

@@ -14,17 +14,38 @@ export default function ChatList() {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchUsername, setSearchUsername] = useState('');
   
-  // 🌟 เพิ่ม State เก็บ Socket เพื่อเอาไว้ส่งสัญญาณหาเพื่อน
   const [socket, setSocket] = useState(null);
 
-  // ฟังก์ชันดึงข้อมูลแชทและรายชื่อเพื่อน
+  // 🌟 ฟังก์ชันดึงข้อมูลแชทและรายชื่อเพื่อน (อัปเดตให้ล็อค Admin ไว้บนสุด)
   const fetchChatData = async (me) => {
     try {
       const res = await fetch(`${API_URL}/api/chat/list/${me}`);
       const data = await res.json();
       if (data.success) {
         setPendingRequests(data.pendingRequests);
-        const sortedChats = data.chatList.sort((a, b) => new Date(b.lastTime || 0) - new Date(a.lastTime || 0));
+        let sortedChats = data.chatList.sort((a, b) => new Date(b.lastTime || 0) - new Date(a.lastTime || 0));
+
+        // 🌟 ล็อค Admin ไว้บนสุดเสมอ
+        const adminIndex = sortedChats.findIndex(chat => chat.FriendName.toLowerCase() === 'admin');
+        let adminChat;
+        
+        if (adminIndex !== -1) {
+          // ถ้ามีประวัติคุยกับ Admin อยู่แล้ว ให้ดึงออกมา
+          adminChat = sortedChats.splice(adminIndex, 1)[0];
+        } else {
+          // ถ้ายังไม่เคยคุย ให้สร้างข้อมูลจำลองขึ้นมา
+          adminChat = { 
+            FriendName: 'Admin', 
+            unreadCount: 0, 
+            latestMessage: 'ฝ่ายบริการลูกค้า (แจ้งปัญหา/สอบถาม)', 
+            lastTime: new Date().toISOString(),
+            ProfileImageUrl: `https://ui-avatars.com/api/?name=Admin&background=CFA348&color=000` // ทำรูปโปรไฟล์สีทองให้เด่น
+          };
+        }
+        
+        // นำ Admin ไปต่อหน้าสุดของ Array เสมอ
+        sortedChats = [adminChat, ...sortedChats];
+
         setChatList(sortedChats);
         return sortedChats;
       }
@@ -45,18 +66,15 @@ export default function ChatList() {
       newSocket = io(API_URL, { transports: ['websocket', 'polling'] });
       setSocket(newSocket);
 
-      // 🌟 1. นำตัวเองเข้าไปอยู่ใน "ห้องส่วนตัว (ชื่อตัวเอง)" เพื่อรอรับแจ้งเตือนเพิ่มเพื่อนแบบ Real-time
       newSocket.emit('join_room', me);
 
-      // เข้าห้องแชทของเพื่อนแต่ละคน
       if (loadedChats) {
         loadedChats.forEach(chat => {
-          let roomName = [me, chat.FriendName].sort().join('_');
+          let roomName = [me.toLowerCase(), chat.FriendName.toLowerCase()].sort().join('_');
           newSocket.emit('join_room', roomName); 
         });
       }
 
-      // 🌟 2. เมื่อมีข้อความใหม่ หรือการกระทำอะไรก็ตาม (เช่น เพื่อนรับแอด) ให้อัปเดตหน้าจอทันที!
       newSocket.on('receive_message', () => {
         fetchChatData(me); 
       });
@@ -66,10 +84,6 @@ export default function ChatList() {
     return () => { if (newSocket) newSocket.disconnect(); };
   }, [navigate]);
 
-  // ==========================================
-  // 🌟 ฟังก์ชันจัดการเพื่อน (ดึงข้อมูลใหม่ทันที & สะกิดเพื่อน)
-  // ==========================================
-
   const handleAcceptFriend = async (requester) => {
     try {
       await fetch(`${API_URL}/api/chat/accept-friend`, {
@@ -77,9 +91,7 @@ export default function ChatList() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ me: myUsername, requesterUsername: requester })
       });
-      
-      fetchChatData(myUsername); // โหลดจอตัวเองทันที
-      // สะกิดเพื่อนให้อัปเดตจอด้วย (อ้างอิงชื่อเพื่อนเป็นชื่อห้อง)
+      fetchChatData(myUsername); 
       if (socket) socket.emit('send_message', { room: requester, type: 'refresh' }); 
     } catch (err) {}
   };
@@ -91,8 +103,7 @@ export default function ChatList() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ me: myUsername, targetUsername: requester })
       });
-      
-      fetchChatData(myUsername); // โหลดจอตัวเองทันที
+      fetchChatData(myUsername); 
     } catch (err) {}
   };
 
@@ -110,8 +121,7 @@ export default function ChatList() {
       setShowSearchModal(false);
       setSearchUsername('');
       
-      fetchChatData(myUsername); // โหลดจอตัวเองทันที
-      // สะกิดเพื่อนเป้าหมายให้แจ้งเตือนเด้งทันที
+      fetchChatData(myUsername); 
       if (socket) socket.emit('send_message', { room: searchUsername, type: 'refresh' }); 
     } catch (err) {}
   };
@@ -127,7 +137,7 @@ export default function ChatList() {
   return (
     <div style={{ background: '#0B0E14', minHeight: '100vh', color: '#fff', fontFamily: "'Prompt', sans-serif", paddingBottom: '90px' }}>
       
-      {/* 🌟 Top Navbar (แก้ตรงนี้ให้ลอยติดหนึบ) */}
+      {/* 🌟 Top Navbar */}
       <div style={{ 
         position: 'sticky', 
         top: '-20px', 
@@ -179,43 +189,49 @@ export default function ChatList() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {chatList.map((chat, index) => (
-              <div 
-                key={index} 
-                onClick={() => navigate(`/chat/${chat.FriendName}`)}
-                style={{ 
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
-                  background: chat.unreadCount > 0 ? 'rgba(207, 163, 72, 0.1)' : 'rgba(255,255,255,0.03)', 
-                  padding: '15px', 
-                  borderRadius: '16px', 
-                  border: chat.unreadCount > 0 ? '1px solid rgba(207, 163, 72, 0.4)' : '1px solid rgba(255,255,255,0.08)', 
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                  <img src={chat.ProfileImageUrl || `https://ui-avatars.com/api/?name=${chat.FriendName}&background=random&color=fff`} alt="profile" style={{ width: '55px', height: '55px', borderRadius: '50%', objectFit: 'cover' }} />
-                  <div>
-                    <h4 style={{ margin: '0 0 5px 0', fontSize: '1.05rem', color: '#fff', fontWeight: chat.unreadCount > 0 ? 'bold' : 'normal' }}>{chat.FriendName}</h4>
-                    <p style={{ margin: 0, fontSize: '0.85rem', color: chat.unreadCount > 0 ? '#fff' : '#94A3B8', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      {chat.latestMessage}
-                    </p>
+            {chatList.map((chat, index) => {
+              const isAdmin = chat.FriendName.toLowerCase() === 'admin';
+              return (
+                <div 
+                  key={index} 
+                  onClick={() => navigate(`/chat/${chat.FriendName}`)}
+                  style={{ 
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+                    // ถ้าเป็น Admin ให้พื้นหลังเด่นขึ้นมานิดนึง
+                    background: isAdmin ? 'linear-gradient(90deg, rgba(207,163,72,0.1) 0%, rgba(11,14,20,0) 100%)' : (chat.unreadCount > 0 ? 'rgba(207, 163, 72, 0.1)' : 'rgba(255,255,255,0.03)'), 
+                    padding: '15px', 
+                    borderRadius: '16px', 
+                    border: isAdmin ? '1px solid rgba(207, 163, 72, 0.4)' : (chat.unreadCount > 0 ? '1px solid rgba(207, 163, 72, 0.4)' : '1px solid rgba(255,255,255,0.08)'), 
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <img src={chat.ProfileImageUrl || `https://ui-avatars.com/api/?name=${chat.FriendName}&background=random&color=fff`} alt="profile" style={{ width: '55px', height: '55px', borderRadius: '50%', objectFit: 'cover' }} />
+                    <div>
+                      <h4 style={{ margin: '0 0 5px 0', fontSize: '1.05rem', color: isAdmin ? '#CFA348' : '#fff', fontWeight: chat.unreadCount > 0 || isAdmin ? 'bold' : 'normal' }}>
+                        {isAdmin ? 'ฝ่ายบริการลูกค้า (Admin)' : chat.FriendName}
+                      </h4>
+                      <p style={{ margin: 0, fontSize: '0.85rem', color: chat.unreadCount > 0 ? '#fff' : '#94A3B8', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        {chat.latestMessage}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                    <span style={{ fontSize: '0.75rem', color: chat.unreadCount > 0 ? '#CFA348' : '#64748B' }}>{formatTime(chat.lastTime)}</span>
+                    
+                    {chat.unreadCount > 0 ? (
+                      <div style={{ background: '#EF4444', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                        {chat.unreadCount}
+                      </div>
+                    ) : (
+                      <CheckCheck size={16} color="#10B981" /> 
+                    )}
                   </div>
                 </div>
-                
-                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                  <span style={{ fontSize: '0.75rem', color: chat.unreadCount > 0 ? '#CFA348' : '#64748B' }}>{formatTime(chat.lastTime)}</span>
-                  
-                  {chat.unreadCount > 0 ? (
-                    <div style={{ background: '#EF4444', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                      {chat.unreadCount}
-                    </div>
-                  ) : (
-                    <CheckCheck size={16} color="#10B981" /> 
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
