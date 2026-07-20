@@ -56,22 +56,30 @@ function App() {
   
   const [isLoading, setIsLoading] = useState(true);
 
-  // -------------------------------------------------------------
-  // 3. จำลองการดึงข้อมูลตอนเปิดแอป
+ // -------------------------------------------------------------
+  // 3. ดึงข้อมูลผู้ใช้ตัวจริงจากระบบ
   // -------------------------------------------------------------
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchUserData = () => {
       try {
-        setTimeout(() => {
+        // 🌟 1. ดึงข้อมูลโปรไฟล์ที่บันทึกไว้ตอน Login จากเครื่อง
+        const savedProfileStr = localStorage.getItem('userProfile');
+        
+        if (savedProfileStr) {
+          // ถ้ามีข้อมูล ให้แปลงกลับเป็น Object แล้วอัปเดตลง State
+          const actualProfile = JSON.parse(savedProfileStr);
           setUserProfile({
-            name: 'ยังไม่ได้ระบุชื่อ', 
-            phone: 'ยังไม่ได้ระบุเบอร์โทร',
-            image: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+            ...actualProfile,
+            // ถ้ารูปไม่มี ให้ใช้รูป Default
+            image: actualProfile.image || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' 
           });
-          setIsLoading(false); 
-        }, 1000); 
+        }
+        
+        // 🌟 2. ปิดหน้าโหลดทันที (ไม่ต้องหน่วงเวลา 1 วินาทีแล้ว เพราะแอปเราอ่านข้อมูลไวมาก)
+        setIsLoading(false);
+
       } catch (error) {
-        console.error("Error:", error);
+        console.error("Error fetching real user data:", error);
         setIsLoading(false);
       }
     };
