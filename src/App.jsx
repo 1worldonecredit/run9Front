@@ -28,6 +28,7 @@ import MyP2POrders from './pages/MyP2POrders';
 import History from './pages/History'; 
 import ProfileMyTeam from './pages/ProfileMyTeam';
 import ChatList from './pages/ChatList';
+import RegisterShop from './pages/RegisterShop';
 
 // ==========================================
 // 🌟 ฟังก์ชันยามเฝ้าประตู (Protected Route)
@@ -147,6 +148,7 @@ function App() {
               <Route path="/my-p2p-orders" element={<MyP2POrders />} />
               <Route path="/history" element={<History />} />
               <Route path="/profile-my-team/:username" element={<ProfileMyTeam />} />
+              <Route path="/register-shop" element={<RegisterShop />} />
             </Route>
 
           </Route>

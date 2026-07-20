@@ -1,0 +1,130 @@
+/* =========================================
+   ดีไซน์สำหรับระบบร้านค้า (Vendor System)
+   ========================================= */
+
+.shop-container {
+  padding: 20px;
+  color: #fff;
+  font-family: 'Prompt', sans-serif;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.shop-card {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.shop-card-title {
+  color: #CFA348;
+  font-size: 1.2rem;
+  margin-top: 0;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px dashed rgba(207, 163, 72, 0.3);
+  padding-bottom: 15px;
+}
+
+/* Form Styles */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.9rem;
+  color: #94A3B8;
+  margin-bottom: 8px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 12px 15px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #fff;
+  font-family: 'Prompt', sans-serif;
+  outline: none;
+  transition: all 0.3s;
+  box-sizing: border-box;
+}
+
+.form-control:focus {
+  border-color: #CFA348;
+  box-shadow: 0 0 0 2px rgba(207, 163, 72, 0.2);
+}
+
+/* Grid สำหรับอัปโหลดรูปภาพ 6 รูป */
+.image-upload-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 15px;
+}
+
+.upload-box {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px dashed #64748B;
+  border-radius: 12px;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  padding: 10px;
+}
+
+.upload-box:hover {
+  border-color: #CFA348;
+  background: rgba(207, 163, 72, 0.05);
+}
+
+.upload-text {
+  font-size: 0.75rem;
+  color: #94A3B8;
+  margin-top: 10px;
+}
+
+/* แผนที่จำลอง */
+.map-placeholder {
+  height: 250px;
+  background: #1E293B;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #94A3B8;
+  border: 1px solid rgba(255,255,255,0.1);
+  margin-bottom: 10px;
+}
+
+.shop-submit-btn {
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, #CFA348, #B8860B);
+  color: #000;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(207, 163, 72, 0.4);
+  transition: transform 0.2s;
+  font-family: 'Prompt', sans-serif;
+}
+
+.shop-submit-btn:active {
+  transform: scale(0.98);
+}
