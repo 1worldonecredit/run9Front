@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate} from 'react-router-dom';
+// 🌟 เพิ่ม Outlet เข้ามาเพื่อใช้สำหรับทำ Protected Route
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import SoiDaoGame from './pages/SoiDaoGame';
 
 // -------------------------------------------------------------
 // 1. นำเข้าไฟล์หน้าต่างๆ 
-// (ถ้าไฟล์ Layout.jsx ของคุณอยู่ในโฟลเดอร์ pages ให้แก้เป็น './pages/Layout' นะครับ)
 // -------------------------------------------------------------
 import Prelogin from './Prelogin'; 
 import Login from './pages/Login';
@@ -29,10 +29,24 @@ import History from './pages/History';
 import ProfileMyTeam from './pages/ProfileMyTeam';
 import ChatList from './pages/ChatList';
 
+// ==========================================
+// 🌟 ฟังก์ชันยามเฝ้าประตู (Protected Route)
+// ==========================================
+const ProtectedRoute = () => {
+  const isAuth = localStorage.getItem('userProfile');
+  
+  // ถ้าไม่มีข้อมูลโปรไฟล์ในเครื่อง (ยังไม่ล็อกอิน) ให้เตะกลับไปหน้า login
+  if (!isAuth) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  // ถ้าล็อกอินแล้ว ให้ผ่านไปแสดงผลหน้าลูกๆ (Outlet) ได้
+  return <Outlet />;
+};
 
 function App() {
   // -------------------------------------------------------------
-  // 2. สร้างตัวแปรเก็บข้อมูลผู้ใช้ (ใส่ค่าเริ่มต้นป้องกันหน้าขาว)
+  // 2. สร้างตัวแปรเก็บข้อมูลผู้ใช้
   // -------------------------------------------------------------
   const [userProfile, setUserProfile] = useState({
     name: 'กำลังเตรียมข้อมูล...',
@@ -49,16 +63,13 @@ function App() {
     const fetchUserData = async () => {
       try {
         setTimeout(() => {
-          // โหลดเสร็จแล้ว อัปเดตข้อมูล
           setUserProfile({
             name: 'ยังไม่ได้ระบุชื่อ', 
             phone: 'ยังไม่ได้ระบุเบอร์โทร',
             image: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
           });
-          
-          setIsLoading(false); // สั่งปิดหน้าโหลด
-
-        }, 1000); // หน่วงเวลาให้เห็นหน้าโหลด 1 วินาที
+          setIsLoading(false); 
+        }, 1000); 
       } catch (error) {
         console.error("Error:", error);
         setIsLoading(false);
@@ -86,48 +97,55 @@ function App() {
     <Router>
       <div className="app-container">
         <Routes>
-          {/* กลุ่มหน้าอิสระ (ไม่มีเมนูบาร์) */}
+          {/* ========================================== */}
+          {/* 🔓 โซนอิสระ: ใครก็เข้าได้ (ไม่ต้องล็อกอิน) */}
+          {/* ========================================== */}
           <Route path="/" element={<Prelogin />} />
-          <Route path="/login" element={<Login />} />  {/* 🟢 เพิ่มบรรทัดนี้เข้าไปครับ */}
-  
-          {/* หน้า Dashboard เปล่าๆ ชั่วคราว เพื่อให้ทดสอบได้ */}
-       
-          {/* กลุ่มหน้าหลัก (มี Layout คลุมเพื่อให้มี Navbar บน-ล่าง) */}
-          <Route element={<Layout userProfile={userProfile} />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/game" element={<SoiDaoGame />} />
-            {/* หน้า Profile ส่งตัวแปรไปเยอะกว่าเพื่อน เพื่อให้อัปเดตรูปได้ */}
-            <Route path="/profile" element={
-              <Profile 
-                userProfile={userProfile} 
-                setUserProfile={setUserProfile} 
-              />
-            } />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/assets" element={<Assets />} />
-            <Route path="/market" element={<Market />} />
-            {/* หน้าแรกของแชท โชว์รายชื่อเพื่อน (ดึงมาจากเมนูด้านล่าง) */}
-            <Route path="/chat-list" element={<ChatList />} />
-            {/* 🌟 เพิ่มบรรทัดนี้: ถ้ามีใครหลงเข้ามาที่ /chat ให้เด้งไปที่ /chat-list ทันที */}
-            <Route path="/chat" element={<Navigate to="/chat-list" replace />} />
-            {/* หน้าห้องแชทส่วนตัว (ต้องมี :username ต่อท้ายเพื่อให้ Chat.jsx ดึงชื่อไปใช้ได้) */}
-            <Route path="/chat/:username" element={<Chat />} />
-            <Route path="/play-history" element={<PlayHistory />} />
-            <Route path="/deposit" element={<Deposit />} />
-            <Route path="/addusersname" element={<AddUsersName />} />
-             <Route path="/team" element={<Team/>} />
-             <Route path="/topup" element={<TopUpMoney/>}/>
-             <Route element={<P2POrderDetail />} path="/p2p-order/:id" />
-             <Route element={<MyP2POrders />} path="/my-p2p-orders" />
-             <Route element={<MyP2POrders />} path="/my-p2p-orders" />
-             <Route path="/history" element={<History />} />
-            <Route path="/profile-my-team/:username" element={<ProfileMyTeam />} />
+          <Route path="/prelogin" element={<Prelogin/>} />
+          <Route path="/login" element={<Login />} />  
+          <Route path="/register" element={<Register />} />
+          <Route path="/promo" element={<Promo />} />
+
+          {/* ========================================== */}
+          {/* 🔒 โซนปลอดภัย: ต้องผ่านยาม (ProtectedRoute) เท่านั้น */}
+          {/* ========================================== */}
+          <Route element={<ProtectedRoute />}>
+            
+            {/* กลุ่มหน้าหลัก (มี Layout คลุมเพื่อให้มี Navbar บน-ล่าง) */}
+            <Route element={<Layout userProfile={userProfile} />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/game" element={<SoiDaoGame />} />
+              <Route path="/profile" element={
+                <Profile 
+                  userProfile={userProfile} 
+                  setUserProfile={setUserProfile} 
+                />
+              } />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/assets" element={<Assets />} />
+              <Route path="/market" element={<Market />} />
+              
+              <Route path="/chat-list" element={<ChatList />} />
+              <Route path="/chat" element={<Navigate to="/chat-list" replace />} />
+              <Route path="/chat/:username" element={<Chat />} />
+              
+              <Route path="/play-history" element={<PlayHistory />} />
+              <Route path="/deposit" element={<Deposit />} />
+              <Route path="/addusersname" element={<AddUsersName />} />
+              <Route path="/team" element={<Team/>} />
+              <Route path="/topup" element={<TopUpMoney/>}/>
+              <Route path="/p2p-order/:id" element={<P2POrderDetail />} />
+              <Route path="/my-p2p-orders" element={<MyP2POrders />} />
+              <Route path="/history" element={<History />} />
+              <Route path="/profile-my-team/:username" element={<ProfileMyTeam />} />
+            </Route>
 
           </Route>
-            <Route path="/prelogin" element={<Prelogin/>} />
-          <Route path="/promo" element={<Promo />} />
-          <Route path="/register" element={<Register />} />
+
+          {/* 🌟 ดักจับ URL มั่วๆ (404) ให้เด้งกลับไปหน้าแรกสุดเสมอ */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+
         </Routes>
       </div>
     </Router>
