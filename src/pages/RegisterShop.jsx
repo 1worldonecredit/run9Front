@@ -1,24 +1,43 @@
 import React, { useState } from 'react';
-import { Camera, MapPin, Store, FileText, CheckCircle, Upload } from 'lucide-react';
-import './shop.css'; // นำเข้า CSS ที่เราเพิ่งสร้าง
+import { Camera, MapPin, Store, FileText, CheckCircle } from 'lucide-react';
+import './shop.css';
 
 export default function RegisterShop() {
   const [formData, setFormData] = useState({
     shopName: '',
-    platform: '',
     category: '',
     otherCategory: '',
-    vendorType: '',
+    // 🌟 เปลี่ยนมาใช้ Object เก็บค่า Checkbox เพื่อให้เลือกได้หลายข้อ
+    options: {
+      sellOnline: false,
+      sellAtShop: false,
+      sellAtHome: false,
+      needDelivery: false,
+      needMarketing: false,
+    }
   });
 
+  // จัดการพิมพ์ข้อความทั่วไป
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // 🌟 ฟังก์ชันจัดการ Checkbox โดยเฉพาะ
+  const handleCheckboxChange = (e) => {
+    const { name, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      options: {
+        ...prev.options,
+        [name]: checked
+      }
+    }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    console.log("Data to send:", formData); // พิมพ์ดูค่าที่เลือกใน Console
     alert('ส่งข้อมูลสมัครเปิดร้านเรียบร้อยแล้ว รอแอดมินตรวจสอบครับ');
-    // โค้ดส่งเข้า Backend จะทำในสเต็ปต่อไป
   };
 
   return (
@@ -34,28 +53,11 @@ export default function RegisterShop() {
         
         {/* ส่วนที่ 1: ข้อมูลทั่วไป */}
         <div className="shop-card">
-          <h3 className="shop-card-title"><FileText size={20} /> ข้อมูลร้านค้าและแพลตฟอร์ม</h3>
+          <h3 className="shop-card-title"><FileText size={20} /> ข้อมูลร้านค้าและรูปแบบการขาย</h3>
           
           <div className="form-group">
             <label className="form-label">ชื่อร้านค้า (แสดงบนออนไลน์)</label>
             <input type="text" name="shopName" className="form-control" placeholder="ตั้งชื่อร้านของคุณ..." required onChange={handleInputChange} />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">รูปแบบ/แพลตฟอร์มการขาย</label>
-            <select name="platform" className="form-control" required onChange={handleInputChange}>
-              <option value="">-- เลือกแพลตฟอร์ม --</option>
-              <option value="ขายออนไลน์">ขายออนไลน์ (มีชื่อร้าน/โลโก้)</option>
-              <option value="ขายที่ร้าน">ขายที่ร้าน (มีหน้าร้าน)</option>
-              <option value="ขายที่บ้าน">ขายที่บ้าน</option>
-              <option value="ขายออนไลน์_ไม่มีร้าน">ขายสินค้าออนไลน์ ไม่มีร้านค้า</option>
-              <option value="สินค้าเกษตร">สินค้าเกษตร ผลิตเองจากฟาร์ม จากสวน</option>
-              <option value="สินค้าแปรรูปเกษตร">สินค้าแปรรูปเกษตร</option>
-              <option value="สินค้า_OTOP">สินค้า OTOP</option>
-              <option value="สินค้ากลุ่มแม่บ้าน">สินค้า กลุ่มแม่บ้าน</option>
-              <option value="งานฝีมือ_หัตถกรรม">สินค้า งานฝีมือ หัตถกรรม</option>
-              <option value="ขนมไทย_อาหารไทย">ขนมไทย อาหารไทย</option>
-            </select>
           </div>
 
           <div className="form-group">
@@ -83,16 +85,40 @@ export default function RegisterShop() {
             </div>
           )}
 
-          <div className="form-group">
-            <label className="form-label">ประเภทเจ้าของสินค้า (ต้องแนบเอกสารใบอนุญาต)</label>
-            <select name="vendorType" className="form-control" required onChange={handleInputChange}>
-              <option value="">-- เลือกประเภท --</option>
-              <option value="SME">เจ้าของสินค้า SME</option>
-              <option value="Industry">เจ้าของสินค้า อุตสาหกรรม</option>
-              <option value="Importer">สินค้านำเข้า</option>
-              <option value="Distributor">ตัวแทนจำหน่าย</option>
-            </select>
+          {/* 🌟 ปรับปรุงใหม่: Checkbox เลือกรูปแบบการขายและบริการ (เลือกได้หลายข้อ) */}
+          <div className="form-group" style={{ background: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', marginTop: '25px' }}>
+            <label className="form-label" style={{ marginBottom: '15px', color: '#fff', fontSize: '1rem' }}>รูปแบบการขายและบริการเสริม <span style={{ color: '#CFA348', fontSize: '0.8rem' }}>(เลือกได้มากกว่า 1 ข้อ)</span></label>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#94A3B8', cursor: 'pointer' }}>
+                <input type="checkbox" name="sellOnline" checked={formData.options.sellOnline} onChange={handleCheckboxChange} style={{ width: '20px', height: '20px', accentColor: '#CFA348', cursor: 'pointer' }} />
+                ขายออนไลน์
+              </label>
+              
+              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#94A3B8', cursor: 'pointer' }}>
+                <input type="checkbox" name="sellAtShop" checked={formData.options.sellAtShop} onChange={handleCheckboxChange} style={{ width: '20px', height: '20px', accentColor: '#CFA348', cursor: 'pointer' }} />
+                ขายที่ร้าน
+              </label>
+              
+              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#94A3B8', cursor: 'pointer' }}>
+                <input type="checkbox" name="sellAtHome" checked={formData.options.sellAtHome} onChange={handleCheckboxChange} style={{ width: '20px', height: '20px', accentColor: '#CFA348', cursor: 'pointer' }} />
+                ขายที่บ้าน
+              </label>
+              
+              <div style={{ borderTop: '1px dashed rgba(255,255,255,0.1)', margin: '5px 0' }}></div>
+              
+              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#94A3B8', cursor: 'pointer' }}>
+                <input type="checkbox" name="needDelivery" checked={formData.options.needDelivery} onChange={handleCheckboxChange} style={{ width: '20px', height: '20px', accentColor: '#CFA348', cursor: 'pointer' }} />
+                ต้องการบริการจัดส่ง
+              </label>
+              
+              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#94A3B8', cursor: 'pointer' }}>
+                <input type="checkbox" name="needMarketing" checked={formData.options.needMarketing} onChange={handleCheckboxChange} style={{ width: '20px', height: '20px', accentColor: '#CFA348', cursor: 'pointer' }} />
+                ต้องการให้สนับสนุนทางการตลาด
+              </label>
+            </div>
           </div>
+
         </div>
 
         {/* ส่วนที่ 2: อัปโหลดรูปภาพ 6 รูป */}
@@ -115,14 +141,6 @@ export default function RegisterShop() {
               </label>
             ))}
           </div>
-
-          {/* อัปโหลดเอกสารสำหรับประเภทเจ้าของสินค้า */}
-          {formData.vendorType !== '' && (
-            <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(239, 68, 68, 0.1)', border: '1px dashed #EF4444', borderRadius: '12px' }}>
-               <label className="form-label" style={{ color: '#EF4444' }}>เอกสารประกอบ: ใบอนุญาตสำหรับ {formData.vendorType}</label>
-               <input type="file" className="form-control" />
-            </div>
-          )}
         </div>
 
         {/* ส่วนที่ 3: แผนที่ปักหมุด */}
@@ -130,7 +148,6 @@ export default function RegisterShop() {
           <h3 className="shop-card-title"><MapPin size={20} /> พิกัดร้านค้า / สถานที่ผลิตจริง</h3>
           <p style={{ fontSize: '0.8rem', color: '#94A3B8' }}>โปรดปักหมุดตำแหน่งที่ตั้งให้ตรงกับความจริง เพื่อความสะดวกในการตรวจสอบและขนส่ง</p>
           
-          {/* 🌟 พื้นที่เตรียมต่อ Google Maps API */}
           <div className="map-placeholder">
             <MapPin size={40} color="#64748B" style={{ marginBottom: '10px' }} />
             <p>แผนที่ Google Maps จะแสดงตรงนี้ (รอใส่โค้ด API)</p>
