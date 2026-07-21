@@ -122,7 +122,11 @@ export default function RegisterShop() {
   // 🚀 กดส่งข้อมูลฟอร์ม
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    // 🛑 ตรวจสอบก่อนเลยว่า ให้พิกัดหรือยัง? ถ้ายังให้เด้งเตือนและหยุดทำงาน
+    if (!isLocationVerified) {
+        alert("กรุณากดปุ่ม 'ดึงพิกัดปัจจุบันของฉัน (GPS)' และกดอนุญาต ก่อนทำการบันทึกข้อมูลครับ");
+        return; // สั่ง return เพื่อหยุดการทำงานตรงนี้ ไม่ส่งข้อมูลไป Database
+    }
     // สร้างกล่องบรรจุข้อมูลแบบ FormData (เพื่อส่งไฟล์ภาพได้)
     const submitData = new FormData();
     
