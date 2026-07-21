@@ -17,7 +17,7 @@ const defaultCenter = {
 };
 
 // 🔗 URL ของ Backend (ดึงจาก Railway ของคุณ)
-const API_BASE_URL = 'https://run9api-production.up.railway.app';
+const VITE_API_URL = 'https://run9api-production.up.railway.app';
 
 export default function RegisterShop() {
   // 1. State หมวดหมู่ร้านค้า
@@ -58,7 +58,7 @@ export default function RegisterShop() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/shop-categories`);
+        const response = await fetch(`${VITE_API_URL}/api/shop-categories`);
         if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
         setCategories(data);
