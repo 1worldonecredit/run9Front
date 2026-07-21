@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 // นำเข้า Icon สวยๆ เพิ่มเติม
 import { MapPin, Camera, Store, AlertTriangle, Send, ImagePlus, CheckCircle2 } from 'lucide-react';
+
 import './shop.css'; 
 
 // ⚙️ ตั้งค่าขนาดแผนที่
@@ -21,6 +22,9 @@ const API_URL = import.meta.env.VITE_API_URL;
 export default function RegisterShop() {
   const [categories, setCategories] = useState([]);
   const [isLocationVerified, setIsLocationVerified] = useState(false);
+  
+  // 🌟 ย้าย State ควบคุมหน้าต่างข้อมูล (InfoWindow) เข้ามาไว้ด้านในฟังก์ชัน
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     shopName: '',
@@ -94,6 +98,7 @@ export default function RegisterShop() {
           };
           setMarkerPos(pos); 
           setIsLocationVerified(true); 
+          setIsInfoOpen(true); // ✅ เปิดป๊อปอัปอัตโนมัติเมื่อดึงพิกัดเสร็จ
         },
         () => {
           alert("คุณไม่อนุญาตให้เข้าถึงตำแหน่ง เราไม่สามารถบันทึกร้านค้าได้ครับ");
@@ -105,6 +110,7 @@ export default function RegisterShop() {
 
   const onMapClick = (e) => {
     setMarkerPos({ lat: e.latLng.lat(), lng: e.latLng.lng() });
+    setIsInfoOpen(true); // ✅ เปิดป๊อปอัปอัตโนมัติเมื่อคลิกเปลี่ยนตำแหน่งหมุด
   };
 
   const handleSubmit = async (e) => {
@@ -279,7 +285,66 @@ export default function RegisterShop() {
                 onClick={onMapClick}
                 options={{ disableDefaultUI: true, zoomControl: true }}
               >
-                <Marker position={markerPos} />
+                {/* 🌟 ปรับ Marker ใส่โลโก้ และ InfoWindow (หน้าต่างข้อมูล) */}
+                <Marker 
+                  position={markerPos}
+                  icon={{
+                    url: '/IconApp.png', // 📁 ดึงโลโก้จากโฟลเดอร์ public
+                    scaledSize: window.google ? new window.google.maps.Size(60, 60) : null 
+                  }}
+                  onClick={() => setIsInfoOpen(true)}
+                >
+                  {isInfoOpen && (
+                    <InfoWindow position={markerPos} onCloseClick={() => setIsInfoOpen(false)}>
+                      <div style={{ padding: '5px', maxWidth: '220px', textAlign: 'center', fontFamily: 'sans-serif' }}>
+                        
+                        {/* 1. รูปภาพร้านค้า */}
+                        <div style={{ width: '100%', height: '120px', borderRadius: '8px', overflow: 'hidden', marginBottom: '12px', background: '#f3f4f6' }}>
+                          <img 
+                            src={imagePreviews.imageOwner || 'https://via.placeholder.com/200?text=No+Image'} 
+                            alt="Shop Preview" 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                          />
+                        </div>
+
+                        {/* 2. ชื่อร้าน */}
+                        <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', color: '#1f2937', fontWeight: 'bold' }}>
+                          {formData.shopName || 'กำลังตั้งชื่อร้าน...'}
+                        </h4>
+
+                        {/* 3. ประเภทร้าน */}
+                        <p style={{ margin: '0 0 15px 0', fontSize: '13px', color: '#6b7280' }}>
+                          {categories.find(c => String(c.id) === String(formData.categoryId))?.category_name || 'ยังไม่ได้เลือกประเภท'}
+                        </p>
+
+                        {/* 4. ปุ่มนำทาง */}
+                        <a 
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${markerPos.lat},${markerPos.lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            gap: '8px',
+                            width: '100%', 
+                            padding: '10px', 
+                            background: '#3b82f6', 
+                            color: '#fff', 
+                            textDecoration: 'none', 
+                            borderRadius: '8px', 
+                            fontWeight: 'bold', 
+                            fontSize: '14px',
+                            boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)'
+                          }}
+                        >
+                          🚗 นำทางไปที่ร้าน
+                        </a>
+                      </div>
+                    </InfoWindow>
+                  )}
+                </Marker>
+
               </GoogleMap>
             ) : (
               <p style={{textAlign: 'center', padding: '40px', background: '#f1f5f9', borderRadius: '12px', color: '#64748b'}}>กำลังโหลดแผนที่...</p>
