@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
-// นำเข้า Icon สวยๆ เพิ่มเติม
+// นำเข้า Icon
 import { MapPin, Camera, Store, AlertTriangle, Send, ImagePlus, CheckCircle2 } from 'lucide-react';
-
 import './shop.css'; 
 
 // ⚙️ ตั้งค่าขนาดแผนที่
 const mapContainerStyle = {
   width: '100%',
   height: '300px',
-  borderRadius: '12px', // โค้งมนขึ้น
-  boxShadow: '0 4px 10px rgba(0,0,0,0.1)' // เพิ่มมิติให้แผนที่
+  borderRadius: '12px',
+  boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
 };
 
 // 📍 พิกัดเริ่มต้น (กรุงเทพฯ)
@@ -23,8 +22,10 @@ export default function RegisterShop() {
   const [categories, setCategories] = useState([]);
   const [isLocationVerified, setIsLocationVerified] = useState(false);
   
-  // 🌟 ย้าย State ควบคุมหน้าต่างข้อมูล (InfoWindow) เข้ามาไว้ด้านในฟังก์ชัน
+  // 🌟 State ควบคุมหน้าต่างข้อมูล (InfoWindow)
   const [isInfoOpen, setIsInfoOpen] = useState(false);
+  // 🌟 State ควบคุมการ ยุบ/ขยาย ของหน้าต่างข้อมูล
+  const [isInfoExpanded, setIsInfoExpanded] = useState(false);
   
   const [formData, setFormData] = useState({
     shopName: '',
@@ -45,9 +46,7 @@ export default function RegisterShop() {
     imageIdCard: null
   });
 
-  // 🌟 State ใหม่: สำหรับเก็บลิงก์รูป Preview
   const [imagePreviews, setImagePreviews] = useState({});
-
   const [markerPos, setMarkerPos] = useState(defaultCenter);
 
   const { isLoaded } = useJsApiLoader({
@@ -77,13 +76,10 @@ export default function RegisterShop() {
     }));
   };
 
-  // 📸 อัปเดตฟังก์ชันรูปภาพ ให้สร้าง Preview URL
   const handleImageChange = (e, fieldName) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setImages(prev => ({ ...prev, [fieldName]: file }));
-      
-      // สร้าง URL ชั่วคราวเพื่อแสดงภาพ Preview
       setImagePreviews(prev => ({ ...prev, [fieldName]: URL.createObjectURL(file) }));
     }
   };
@@ -98,7 +94,8 @@ export default function RegisterShop() {
           };
           setMarkerPos(pos); 
           setIsLocationVerified(true); 
-          setIsInfoOpen(true); // ✅ เปิดป๊อปอัปอัตโนมัติเมื่อดึงพิกัดเสร็จ
+          setIsInfoOpen(true); 
+          setIsInfoExpanded(false); // เปิดมาให้เป็นใบเล็กก่อน
         },
         () => {
           alert("คุณไม่อนุญาตให้เข้าถึงตำแหน่ง เราไม่สามารถบันทึกร้านค้าได้ครับ");
@@ -110,7 +107,8 @@ export default function RegisterShop() {
 
   const onMapClick = (e) => {
     setMarkerPos({ lat: e.latLng.lat(), lng: e.latLng.lng() });
-    setIsInfoOpen(true); // ✅ เปิดป๊อปอัปอัตโนมัติเมื่อคลิกเปลี่ยนตำแหน่งหมุด
+    setIsInfoOpen(true); 
+    setIsInfoExpanded(false); // เปลี่ยนจุดปุ๊บ หุบเป็นใบเล็ก
   };
 
   const handleSubmit = async (e) => {
@@ -146,7 +144,7 @@ export default function RegisterShop() {
     }
   };
 
-  // 🎨 ตั้งค่า Style ที่ใช้ซ้ำ
+  // 🎨 Style
   const cardStyle = {
     background: '#ffffff',
     borderRadius: '16px',
@@ -215,13 +213,12 @@ export default function RegisterShop() {
           </div>
         </div>
 
-        {/* ส่วนที่ 2: อัปโหลดรูปภาพ พร้อม Preview */}
+        {/* ส่วนที่ 2: อัปโหลดรูปภาพ */}
         <div style={cardStyle}>
           <h3 style={headerStyle}>
             <Camera size={22} color="#ec4899" /> อัปโหลดภาพถ่าย
           </h3>
           
-          {/* 🛑 ป้ายเตือนเงื่อนไข */}
           <div style={{background: '#fef2f2', border: '1px solid #f87171', borderRadius: '8px', padding: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', color: '#b91c1c'}}>
             <AlertTriangle size={24} style={{flexShrink: 0}} />
             <span style={{fontSize: '14px', fontWeight: 'bold'}}>
@@ -241,7 +238,6 @@ export default function RegisterShop() {
               <div key={imgField.id} style={{ position: 'relative', height: '140px', borderRadius: '12px', overflow: 'hidden', border: imagePreviews[imgField.id] ? '2px solid #22c55e' : '2px dashed #cbd5e1', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s ease', cursor: 'pointer', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)' }}>
                 
                 {imagePreviews[imgField.id] ? (
-                  // ✅ แสดงภาพ Preview
                   <>
                     <img src={imagePreviews[imgField.id]} alt={imgField.label} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
                     <div style={{position: 'absolute', bottom: 0, width: '100%', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '11px', padding: '6px', textAlign: 'center', backdropFilter: 'blur(2px)'}}>
@@ -250,7 +246,6 @@ export default function RegisterShop() {
                     <CheckCircle2 size={24} color="#22c55e" style={{position: 'absolute', top: '8px', right: '8px', background: '#fff', borderRadius: '50%'}} />
                   </>
                 ) : (
-                  // ❌ กรณีภาพว่างเปล่า
                   <div style={{padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#94a3b8'}}>
                     <ImagePlus size={32} style={{ marginBottom: '8px' }} /> 
                     <span style={{fontSize: '12px', textAlign: 'center', lineHeight: '1.4'}}>{imgField.label}</span>
@@ -285,62 +280,86 @@ export default function RegisterShop() {
                 onClick={onMapClick}
                 options={{ disableDefaultUI: true, zoomControl: true }}
               >
-                {/* 🌟 ปรับ Marker ใส่โลโก้ และ InfoWindow (หน้าต่างข้อมูล) */}
                 <Marker 
                   position={markerPos}
                   icon={{
-                    url: '/IconApp.png', // 📁 ดึงโลโก้จากโฟลเดอร์ public
+                    url: '/IconApp.png',
                     scaledSize: window.google ? new window.google.maps.Size(60, 60) : null 
                   }}
-                  onClick={() => setIsInfoOpen(true)}
+                  onClick={() => {
+                    setIsInfoOpen(true);
+                    setIsInfoExpanded(false); // เริ่มต้นให้ยุบการ์ดไว้
+                  }}
                 >
                   {isInfoOpen && (
                     <InfoWindow position={markerPos} onCloseClick={() => setIsInfoOpen(false)}>
-                      <div style={{ padding: '5px', maxWidth: '220px', textAlign: 'center', fontFamily: 'sans-serif' }}>
-                        
-                        {/* 1. รูปภาพร้านค้า */}
-                        <div style={{ width: '100%', height: '120px', borderRadius: '8px', overflow: 'hidden', marginBottom: '12px', background: '#f3f4f6' }}>
-                          <img 
-                            src={imagePreviews.imageOwner || 'https://via.placeholder.com/200?text=No+Image'} 
-                            alt="Shop Preview" 
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                          />
-                        </div>
-
-                        {/* 2. ชื่อร้าน */}
-                        <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', color: '#1f2937', fontWeight: 'bold' }}>
-                          {formData.shopName || 'กำลังตั้งชื่อร้าน...'}
-                        </h4>
-
-                        {/* 3. ประเภทร้าน */}
-                        <p style={{ margin: '0 0 15px 0', fontSize: '13px', color: '#6b7280' }}>
-                          {categories.find(c => String(c.id) === String(formData.categoryId))?.category_name || 'ยังไม่ได้เลือกประเภท'}
-                        </p>
-
-                        {/* 4. ปุ่มนำทาง */}
-                        <a 
-                          href={`https://www.google.com/maps/dir/?api=1&destination=${markerPos.lat},${markerPos.lng}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center',
-                            gap: '8px',
-                            width: '100%', 
-                            padding: '10px', 
-                            background: '#3b82f6', 
-                            color: '#fff', 
-                            textDecoration: 'none', 
-                            borderRadius: '8px', 
-                            fontWeight: 'bold', 
-                            fontSize: '14px',
-                            boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)'
-                          }}
+                      
+                      {!isInfoExpanded ? (
+                        <div 
+                          onClick={() => setIsInfoExpanded(true)} 
+                          style={{ padding: '4px 8px', cursor: 'pointer', textAlign: 'center', minWidth: '110px' }}
                         >
-                          🚗 นำทางไปที่ร้าน
-                        </a>
-                      </div>
+                          <h4 style={{ margin: 0, fontSize: '14px', color: '#1f2937', fontWeight: 'bold' }}>
+                            {formData.shopName || 'ร้านค้าใหม่'}
+                          </h4>
+                          <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#3b82f6', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                            👆 คลิ้กดูรายละเอียด
+                          </p>
+                        </div>
+                      ) : (
+                        <div style={{ padding: '5px', maxWidth: '220px', textAlign: 'center', fontFamily: 'sans-serif' }}>
+                          
+                          <div style={{ textAlign: 'left', marginBottom: '8px' }}>
+                            <button 
+                              type="button"
+                              onClick={() => setIsInfoExpanded(false)}
+                              style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}
+                            >
+                              ⬅️ ย่อกลับ
+                            </button>
+                          </div>
+
+                          <div style={{ width: '100%', height: '120px', borderRadius: '8px', overflow: 'hidden', marginBottom: '12px', background: '#f3f4f6' }}>
+                            <img 
+                              src={imagePreviews.imageOwner || 'https://via.placeholder.com/200?text=No+Image'} 
+                              alt="Shop Preview" 
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                            />
+                          </div>
+
+                          <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', color: '#1f2937', fontWeight: 'bold' }}>
+                            {formData.shopName || 'กำลังตั้งชื่อร้าน...'}
+                          </h4>
+
+                          <p style={{ margin: '0 0 15px 0', fontSize: '13px', color: '#6b7280' }}>
+                            {categories.find(c => String(c.id) === String(formData.categoryId))?.category_name || 'ยังไม่ได้เลือกประเภท'}
+                          </p>
+
+                          <a 
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${markerPos.lat},${markerPos.lng}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              gap: '8px',
+                              width: '100%', 
+                              padding: '10px', 
+                              background: '#3b82f6', 
+                              color: '#fff', 
+                              textDecoration: 'none', 
+                              borderRadius: '8px', 
+                              fontWeight: 'bold', 
+                              fontSize: '14px',
+                              boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)'
+                            }}
+                          >
+                            🚗 นำทางไปที่ร้าน
+                          </a>
+                        </div>
+                      )}
+
                     </InfoWindow>
                   )}
                 </Marker>
