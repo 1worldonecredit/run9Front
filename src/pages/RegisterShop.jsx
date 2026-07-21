@@ -1,30 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
-import { MapPin, Camera } from 'lucide-react';
-import './shop.css'; // เรียกใช้ CSS ที่เราเพิ่งสร้าง
+// นำเข้า Icon สวยๆ เพิ่มเติม
+import { MapPin, Camera, Store, AlertTriangle, Send, ImagePlus, CheckCircle2 } from 'lucide-react';
+import './shop.css'; 
 
 // ⚙️ ตั้งค่าขนาดแผนที่
 const mapContainerStyle = {
   width: '100%',
   height: '300px',
-  borderRadius: '8px'
+  borderRadius: '12px', // โค้งมนขึ้น
+  boxShadow: '0 4px 10px rgba(0,0,0,0.1)' // เพิ่มมิติให้แผนที่
 };
 
 // 📍 พิกัดเริ่มต้น (กรุงเทพฯ)
-const defaultCenter = {
-  lat: 13.7563,
-  lng: 100.5018
-};
+const defaultCenter = { lat: 13.7563, lng: 100.5018 };
 
-// 🔗 URL ของ Backend (ดึงจาก Railway ของคุณ)
+// 🔗 URL ของ Backend
 const API_URL = import.meta.env.VITE_API_URL;
-// 3. State เช็กว่าผู้ใช้ให้พิกัด GPS จริงๆ แล้วหรือยัง (เริ่มต้นคือ false = ยังไม่ให้)
-const [isLocationVerified, setIsLocationVerified] = useState(false);
+
 export default function RegisterShop() {
-  // 1. State หมวดหมู่ร้านค้า
   const [categories, setCategories] = useState([]);
+  const [isLocationVerified, setIsLocationVerified] = useState(false);
   
-  // 2. State ฟอร์มข้อมูล Text
   const [formData, setFormData] = useState({
     shopName: '',
     categoryId: '',
@@ -35,7 +32,6 @@ export default function RegisterShop() {
     marketingSupport: false
   });
 
-  // 3. State รูปภาพ (6 ช่อง)
   const [images, setImages] = useState({
     imageOwner: null,
     imageLocation: null,
@@ -45,17 +41,16 @@ export default function RegisterShop() {
     imageIdCard: null
   });
 
-  // 4. State แผนที่
+  // 🌟 State ใหม่: สำหรับเก็บลิงก์รูป Preview
+  const [imagePreviews, setImagePreviews] = useState({});
+
   const [markerPos, setMarkerPos] = useState(defaultCenter);
 
-  // 🗺️ โหลด API แผนที่
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    // ดึงคีย์จากไฟล์ .env
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
   });
 
-  // 🔄 ดึงข้อมูลหมวดหมู่เมื่อเปิดหน้าเว็บ
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -70,7 +65,6 @@ export default function RegisterShop() {
     fetchCategories();
   }, []);
 
-  // 📝 จัดการเมื่อพิมพ์หรือคลิก Checkbox
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -79,69 +73,54 @@ export default function RegisterShop() {
     }));
   };
 
-  // 📸 จัดการเมื่ออัปโหลดรูป
+  // 📸 อัปเดตฟังก์ชันรูปภาพ ให้สร้าง Preview URL
   const handleImageChange = (e, fieldName) => {
     if (e.target.files && e.target.files[0]) {
-      setImages(prev => ({
-        ...prev,
-        [fieldName]: e.target.files[0]
-      }));
+      const file = e.target.files[0];
+      setImages(prev => ({ ...prev, [fieldName]: file }));
+      
+      // สร้าง URL ชั่วคราวเพื่อแสดงภาพ Preview
+      setImagePreviews(prev => ({ ...prev, [fieldName]: URL.createObjectURL(file) }));
     }
   };
 
-  // 📍 ดึงพิกัด GPS ปัจจุบัน
   const handleGetLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          // ถ้าผู้ใช้อนุญาตและดึงพิกัดสำเร็จ
           const pos = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           };
-          setMarkerPos(pos); // ขยับหมุดไปที่ใหม่
-          setIsLocationVerified(true); // ✅ ยืนยันว่าได้พิกัดจริงแล้ว!
+          setMarkerPos(pos); 
+          setIsLocationVerified(true); 
         },
         () => {
-          // ถ้าผู้ใช้กด Block (ไม่อนุญาต)
           alert("คุณไม่อนุญาตให้เข้าถึงตำแหน่ง เราไม่สามารถบันทึกร้านค้าได้ครับ");
-          setIsLocationVerified(false); // ❌ ไม่อนุญาต
+          setIsLocationVerified(false); 
         }
       );
     }
   };
 
-  // 📍 คลิกลากหมุดบนแผนที่
   const onMapClick = (e) => {
-    setMarkerPos({
-      lat: e.latLng.lat(),
-      lng: e.latLng.lng()
-    });
+    setMarkerPos({ lat: e.latLng.lat(), lng: e.latLng.lng() });
   };
 
-  // 🚀 กดส่งข้อมูลฟอร์ม
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // 🛑 ตรวจสอบก่อนเลยว่า ให้พิกัดหรือยัง? ถ้ายังให้เด้งเตือนและหยุดทำงาน
     if (!isLocationVerified) {
-        alert("กรุณากดปุ่ม 'ดึงพิกัดปัจจุบันของฉัน (GPS)' และกดอนุญาต ก่อนทำการบันทึกข้อมูลครับ");
-        return; // สั่ง return เพื่อหยุดการทำงานตรงนี้ ไม่ส่งข้อมูลไป Database
+        alert("กรุณากดปุ่ม '📍 ดึงพิกัดปัจจุบันของฉัน (GPS)' และกดอนุญาต ก่อนทำการบันทึกข้อมูลครับ");
+        return; 
     }
-    // สร้างกล่องบรรจุข้อมูลแบบ FormData (เพื่อส่งไฟล์ภาพได้)
+    
     const submitData = new FormData();
-    
-    // ใส่ข้อมูลข้อความ
     Object.keys(formData).forEach(key => submitData.append(key, formData[key]));
-    
-    // ใส่พิกัด Latitude, Longitude
     submitData.append('lat', markerPos.lat);
     submitData.append('lng', markerPos.lng);
     
-    // ใส่ไฟล์ภาพทั้ง 6 ไฟล์
     Object.keys(images).forEach(key => {
-      if (images[key]) {
-        submitData.append(key, images[key]);
-      }
+      if (images[key]) submitData.append(key, images[key]);
     });
 
     try {
@@ -161,15 +140,38 @@ export default function RegisterShop() {
     }
   };
 
+  // 🎨 ตั้งค่า Style ที่ใช้ซ้ำ
+  const cardStyle = {
+    background: '#ffffff',
+    borderRadius: '16px',
+    padding: '24px',
+    marginBottom: '20px',
+    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)',
+    border: '1px solid #f3f4f6'
+  };
+
+  const headerStyle = {
+    marginTop: 0,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    color: '#1f2937',
+    borderBottom: '2px solid #f3f4f6',
+    paddingBottom: '12px',
+    marginBottom: '20px'
+  };
+
   return (
-    <div className="shop-container">
+    <div className="shop-container" style={{ padding: '20px', maxWidth: '800px', margin: '0 auto', background: '#f8fafc', borderRadius: '20px' }}>
       <form onSubmit={handleSubmit}>
         
         {/* ส่วนที่ 1: ข้อมูลร้านค้า */}
-        <div className="shop-card">
-          <h3 style={{marginTop: 0}}>📄 ข้อมูลร้านค้าและรูปแบบการขาย</h3>
+        <div style={cardStyle}>
+          <h3 style={headerStyle}>
+            <Store size={22} color="#3b82f6" /> ข้อมูลร้านค้าและรูปแบบการขาย
+          </h3>
           
-          <label style={{fontSize: '14px'}}>ชื่อร้านค้า (แสดงบนออนไลน์)</label>
+          <label style={{fontSize: '14px', fontWeight: 'bold', color: '#4b5563', display: 'block', marginBottom: '8px'}}>ชื่อร้านค้า (แสดงบนออนไลน์)</label>
           <input 
             type="text" 
             name="shopName"
@@ -177,15 +179,16 @@ export default function RegisterShop() {
             onChange={handleChange}
             className="shop-input" 
             placeholder="ตั้งชื่อร้านของคุณ..." 
+            style={{width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', marginBottom: '16px', outline: 'none', transition: 'border 0.3s'}}
             required 
           />
           
-          <label style={{fontSize: '14px'}}>ประเภทธุรกิจ / หมวดหมู่สินค้า</label>
+          <label style={{fontSize: '14px', fontWeight: 'bold', color: '#4b5563', display: 'block', marginBottom: '8px'}}>ประเภทธุรกิจ / หมวดหมู่สินค้า</label>
           <select 
             name="categoryId" 
             value={formData.categoryId} 
             onChange={handleChange} 
-            className="shop-dropdown" 
+            style={{width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', backgroundColor: '#fff', outline: 'none'}}
             required
           >
             <option value="">-- เลือกประเภทร้านค้า --</option>
@@ -194,23 +197,33 @@ export default function RegisterShop() {
             ))}
           </select>
 
-          <div style={{marginTop: '15px', fontSize: '14px'}}>
-            <label style={{fontWeight: 'bold', marginBottom: '8px', display: 'block'}}>รูปแบบการขายและบริการเสริม:</label>
-            <div style={{display: 'flex', gap: '15px', flexWrap: 'wrap'}}>
-              <label><input type="checkbox" name="sellOnline" checked={formData.sellOnline} onChange={handleChange} /> ขายออนไลน์</label>
-              <label><input type="checkbox" name="sellAtStore" checked={formData.sellAtStore} onChange={handleChange} /> ขายที่ร้าน</label>
-              <label><input type="checkbox" name="sellAtHome" checked={formData.sellAtHome} onChange={handleChange} /> ขายที่บ้าน</label>
-              <label><input type="checkbox" name="deliveryService" checked={formData.deliveryService} onChange={handleChange} /> ต้องการบริการจัดส่ง</label>
-              <label><input type="checkbox" name="marketingSupport" checked={formData.marketingSupport} onChange={handleChange} /> ให้สนับสนุนทางตลาด</label>
+          <div style={{marginTop: '20px', background: '#f0f9ff', padding: '16px', borderRadius: '8px', border: '1px solid #bae6fd'}}>
+            <label style={{fontWeight: 'bold', marginBottom: '12px', display: 'block', color: '#0369a1'}}>รูปแบบการขายและบริการเสริม:</label>
+            <div style={{display: 'flex', gap: '15px', flexWrap: 'wrap', fontSize: '14px', color: '#334155'}}>
+              <label style={{display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer'}}><input type="checkbox" name="sellOnline" checked={formData.sellOnline} onChange={handleChange} /> ขายออนไลน์</label>
+              <label style={{display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer'}}><input type="checkbox" name="sellAtStore" checked={formData.sellAtStore} onChange={handleChange} /> ขายที่ร้าน</label>
+              <label style={{display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer'}}><input type="checkbox" name="sellAtHome" checked={formData.sellAtHome} onChange={handleChange} /> ขายที่บ้าน</label>
+              <label style={{display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer'}}><input type="checkbox" name="deliveryService" checked={formData.deliveryService} onChange={handleChange} /> ต้องการบริการจัดส่ง</label>
+              <label style={{display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer'}}><input type="checkbox" name="marketingSupport" checked={formData.marketingSupport} onChange={handleChange} /> ให้สนับสนุนทางตลาด</label>
             </div>
           </div>
         </div>
 
-        {/* ส่วนที่ 2: อัปโหลดรูปภาพ */}
-        <div className="shop-card">
-          <h3 style={{marginTop: 0}}>📸 อัปโหลดภาพถ่าย (อย่างน้อย 6 ภาพ)</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            
+        {/* ส่วนที่ 2: อัปโหลดรูปภาพ พร้อม Preview */}
+        <div style={cardStyle}>
+          <h3 style={headerStyle}>
+            <Camera size={22} color="#ec4899" /> อัปโหลดภาพถ่าย
+          </h3>
+          
+          {/* 🛑 ป้ายเตือนเงื่อนไข */}
+          <div style={{background: '#fef2f2', border: '1px solid #f87171', borderRadius: '8px', padding: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', color: '#b91c1c'}}>
+            <AlertTriangle size={24} style={{flexShrink: 0}} />
+            <span style={{fontSize: '14px', fontWeight: 'bold'}}>
+              คำเตือน: ถ้ารูปไม่ตรงตามเงื่อนไข และไม่ครบ ร้านคุณจะไม่ได้รับการอนุมัติให้เปิด
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px' }}>
             {[
               { id: 'imageOwner', label: '1. ภาพเจ้าของสินค้า' },
               { id: 'imageLocation', label: '2. ภาพกำลังผลิต/สถานที่' },
@@ -219,25 +232,45 @@ export default function RegisterShop() {
               { id: 'imageReadyToShip', label: '5. ภาพพร้อมจัดส่ง' },
               { id: 'imageIdCard', label: '6. เซลฟี่พร้อมบัตร ปชช.' }
             ].map((imgField) => (
-              <label key={imgField.id} style={{ border: '1px dashed #666', padding: '10px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer', fontSize: '12px' }}>
-                <Camera size={24} style={{ display: 'block', margin: '0 auto 5px', color: '#999' }} /> 
-                <span>{imgField.label}</span>
-                <input type="file" style={{ display: 'none' }} onChange={(e) => handleImageChange(e, imgField.id)} required />
-                {images[imgField.id] && <div style={{color: '#4ade80', marginTop: '5px', fontWeight: 'bold'}}>✔️ อัปโหลดแล้ว</div>}
-              </label>
+              <div key={imgField.id} style={{ position: 'relative', height: '140px', borderRadius: '12px', overflow: 'hidden', border: imagePreviews[imgField.id] ? '2px solid #22c55e' : '2px dashed #cbd5e1', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s ease', cursor: 'pointer', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)' }}>
+                
+                {imagePreviews[imgField.id] ? (
+                  // ✅ แสดงภาพ Preview
+                  <>
+                    <img src={imagePreviews[imgField.id]} alt={imgField.label} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                    <div style={{position: 'absolute', bottom: 0, width: '100%', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '11px', padding: '6px', textAlign: 'center', backdropFilter: 'blur(2px)'}}>
+                       {imgField.label}
+                    </div>
+                    <CheckCircle2 size={24} color="#22c55e" style={{position: 'absolute', top: '8px', right: '8px', background: '#fff', borderRadius: '50%'}} />
+                  </>
+                ) : (
+                  // ❌ กรณีภาพว่างเปล่า
+                  <div style={{padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#94a3b8'}}>
+                    <ImagePlus size={32} style={{ marginBottom: '8px' }} /> 
+                    <span style={{fontSize: '12px', textAlign: 'center', lineHeight: '1.4'}}>{imgField.label}</span>
+                  </div>
+                )}
+                
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} 
+                  onChange={(e) => handleImageChange(e, imgField.id)} 
+                  required 
+                />
+              </div>
             ))}
-
           </div>
         </div>
 
         {/* ส่วนที่ 3: แผนที่ */}
-        <div className="shop-card">
-          <h3 style={{marginTop: 0, display: 'flex', alignItems: 'center', gap: '5px'}}>
-            <MapPin size={20} /> พิกัดร้านค้า / สถานที่ผลิตจริง
+        <div style={cardStyle}>
+          <h3 style={headerStyle}>
+            <MapPin size={22} color="#10b981" /> พิกัดร้านค้า / สถานที่ผลิตจริง
           </h3>
-          <p style={{fontSize: '12px', color: '#aaa', marginBottom: '15px'}}>โปรดคลิกบนแผนที่เพื่อปักหมุดตำแหน่งที่ตั้งให้ตรงกับความจริง</p>
+          <p style={{fontSize: '13px', color: '#64748b', marginBottom: '16px'}}>📍 โปรดคลิกบนแผนที่เพื่อปักหมุดตำแหน่งที่ตั้งให้ตรงกับความจริง</p>
           
-          <div className="map-wrapper" style={{marginBottom: '15px'}}>
+          <div style={{marginBottom: '20px', borderRadius: '12px', overflow: 'hidden'}}>
             {isLoaded ? (
               <GoogleMap
                 mapContainerStyle={mapContainerStyle}
@@ -249,24 +282,27 @@ export default function RegisterShop() {
                 <Marker position={markerPos} />
               </GoogleMap>
             ) : (
-              <p style={{textAlign: 'center', padding: '20px'}}>กำลังโหลดแผนที่...</p>
+              <p style={{textAlign: 'center', padding: '40px', background: '#f1f5f9', borderRadius: '12px', color: '#64748b'}}>กำลังโหลดแผนที่...</p>
             )}
           </div>
           
           <button 
             type="button" 
-            onClick={getCurrentLocation} 
-            style={{width: '100%', padding: '12px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', borderRadius: '8px', border: '1px solid #3b82f6', cursor: 'pointer', fontWeight: 'bold'}}
+            onClick={handleGetLocation} 
+            style={{width: '100%', padding: '14px', background: isLocationVerified ? '#dcfce7' : '#eff6ff', color: isLocationVerified ? '#166534' : '#2563eb', borderRadius: '10px', border: isLocationVerified ? '2px solid #22c55e' : '2px solid #3b82f6', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.3s'}}
           >
-            📍 ดึงพิกัดปัจจุบันของฉัน (GPS)
+            {isLocationVerified ? <CheckCircle2 size={20} /> : <MapPin size={20} />} 
+            {isLocationVerified ? 'ดึงพิกัดสำเร็จแล้ว' : 'ดึงพิกัดปัจจุบันของฉัน (GPS)'}
           </button>
         </div>
 
         <button 
           type="submit" 
-          style={{width: '100%', padding: '15px', background: '#eab308', color: '#000', fontWeight: 'bold', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '16px', marginBottom: '40px'}}
+          style={{width: '100%', padding: '16px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', fontWeight: 'bold', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)', transition: 'transform 0.2s'}}
+          onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+          onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
         >
-          ✔️ ส่งคำขอเปิดร้านค้า
+          <Send size={24} /> ส่งคำขอเปิดร้านค้า
         </button>
 
       </form>
