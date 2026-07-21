@@ -18,7 +18,8 @@ const defaultCenter = {
 
 // 🔗 URL ของ Backend (ดึงจาก Railway ของคุณ)
 const API_URL = import.meta.env.VITE_API_URL;
-
+// 3. State เช็กว่าผู้ใช้ให้พิกัด GPS จริงๆ แล้วหรือยัง (เริ่มต้นคือ false = ยังไม่ให้)
+const [isLocationVerified, setIsLocationVerified] = useState(false);
 export default function RegisterShop() {
   // 1. State หมวดหมู่ร้านค้า
   const [categories, setCategories] = useState([]);
@@ -89,18 +90,24 @@ export default function RegisterShop() {
   };
 
   // 📍 ดึงพิกัด GPS ปัจจุบัน
-  const getCurrentLocation = () => {
+  const handleGetLocation = () => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        setMarkerPos({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        });
-      }, () => {
-        alert("ไม่สามารถดึงตำแหน่งปัจจุบันได้ กรุณาอนุญาตการเข้าถึง GPS");
-      });
-    } else {
-      alert("เบราว์เซอร์ของคุณไม่รองรับ GPS");
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          // ถ้าผู้ใช้อนุญาตและดึงพิกัดสำเร็จ
+          const pos = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setMarkerPos(pos); // ขยับหมุดไปที่ใหม่
+          setIsLocationVerified(true); // ✅ ยืนยันว่าได้พิกัดจริงแล้ว!
+        },
+        () => {
+          // ถ้าผู้ใช้กด Block (ไม่อนุญาต)
+          alert("คุณไม่อนุญาตให้เข้าถึงตำแหน่ง เราไม่สามารถบันทึกร้านค้าได้ครับ");
+          setIsLocationVerified(false); // ❌ ไม่อนุญาต
+        }
+      );
     }
   };
 
