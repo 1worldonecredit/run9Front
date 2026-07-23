@@ -333,6 +333,23 @@
     filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
 }
 
+.bottom-nav-container {
+  display: flex;
+  overflow-x: auto;            /* เปิดให้เลื่อนซ้ายขวาได้ */
+  scroll-behavior: smooth;     /* เลื่อนแบบนุ่มนวล */
+  -webkit-overflow-scrolling: touch; /* รองรับการปัดบนมือถือ iOS ให้ลื่นปรี๊ด */
+  scrollbar-width: none;       /* ซ่อน Scrollbar (Firefox) */
+}
+
+/* ซ่อน Scrollbar (Chrome, Safari) */
+.bottom-nav-container::-webkit-scrollbar {
+  display: none;
+}
+
+.bottom-nav-item {
+  flex-shrink: 0;             /* ป้องกันเมนูโดนบีบจนเบี้ยว */
+  min-width: 75px;            /* กำหนดความกว้างขั้นต่ำให้แตะง่าย */
+}
 /* =========================================
    🌟 Notifications Styles
 ========================================= */
