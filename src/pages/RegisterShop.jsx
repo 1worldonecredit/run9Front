@@ -42,24 +42,36 @@ export default function RegisterShop() {
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
   });
 
-  // 🌟 ฟังก์ชันดึง User ID ขั้นเทพ (ดักจับทุกรูปแบบที่เป็นไปได้)
+  // 🌟 ฟังก์ชันสแกนหา User ID แบบอัตโนมัติ (ไม่สนว่าจะตั้งชื่อตัวแปรว่าอะไร)
   const getLoggedInUserId = () => {
     try {
-      const userStr = localStorage.getItem('user') || localStorage.getItem('userData');
-      if (!userStr) return null;
+      // 1. ลองหาจากชื่อตัวแปรที่ใช้บ่อยๆ ก่อน
+      const possibleKeys = ['user', 'userData', 'auth', 'authUser', 'session', 'adminUser', 'profile'];
+      for (let key of possibleKeys) {
+        const data = localStorage.getItem(key);
+        if (data) {
+          try {
+            const parsed = JSON.parse(data);
+            const id = parsed.id || parsed.userId || parsed.user_id || parsed.User_ID || (parsed.user && parsed.user.id);
+            if (id) return Number(id);
+          } catch(e) {}
+        }
+      }
 
-      // กรณีเก็บเป็นเลขไอดีโดดๆ เช่น "15"
-      if (!isNaN(userStr)) return Number(userStr);
-
-      const userObj = JSON.parse(userStr);
-
-      // ควานหา ID จากโครงสร้างที่นักพัฒนามักใช้
-      const extractedId = userObj.id || userObj.userId || userObj.user_id || userObj.User_ID || userObj.ID || 
-                          (userObj.user && (userObj.user.id || userObj.user.user_id)) || null;
-      
-      return extractedId ? Number(extractedId) : null;
+      // 2. ถ้ายังไม่เจอ ให้ค้นหาทุกกล่องใน LocalStorage เลย! (ระบบสแกน)
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const data = localStorage.getItem(key);
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed && typeof parsed === 'object') {
+            const id = parsed.id || parsed.userId || parsed.user_id || parsed.User_ID || (parsed.user && parsed.user.id);
+            if (id) return Number(id);
+          }
+        } catch(e) {}
+      }
+      return null;
     } catch (error) {
-      console.error("Error parsing user data:", error);
       return null;
     }
   };
@@ -70,9 +82,9 @@ export default function RegisterShop() {
         const catRes = await fetch(`${API_URL}/api/shop-categories`);
         if (catRes.ok) setCategories(await catRes.json());
 
+        // 🌟 เรียกใช้ระบบสแกน ID
         const userId = getLoggedInUserId();
         
-        // ถ้าหา ID ไม่เจอ หรือ ID เป็น 0 ให้หยุดทำงานทันที ไม่ต้องดึงข้อมูล
         if (!userId || isNaN(userId) || userId === 0) { 
           setIsLoadingData(false); 
           return; 
@@ -206,11 +218,15 @@ export default function RegisterShop() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // 🌟 ด่านตรวจสำคัญ: ถ้าไม่มี ID หรือ ID เป็น 0 ห้ามเซฟเด็ดขาด!
+    // 🌟 ด่านตรวจสำคัญ
     const userId = getLoggedInUserId();
     if (!userId || isNaN(userId) || userId === 0) {
-      const rawData = localStorage.getItem('user') || "ไม่มีข้อมูลใน LocalStorage";
-      alert(`⚠️ ระบบไม่สามารถดึงรหัสผู้ใช้งานของคุณได้ครับ!\n\nข้อมูลที่พบในระบบคือ:\n${rawData.substring(0, 150)}\n\nกรุณาออกจากระบบ (Logout) และเข้าสู่ระบบใหม่อีกครั้งครับ`);
+      // ดึงชื่อ Key ทั้งหมดมาโชว์ จะได้รู้ว่าระบบตั้งชื่อว่าอะไร
+      let allKeys = "";
+      for (let i = 0; i < localStorage.length; i++) {
+          allKeys += `[${localStorage.key(i)}] `;
+      }
+      alert(`⚠️ ระบบไม่สามารถดึงรหัสผู้ใช้งานได้ครับ!\n\nข้อมูลที่มีในระบบคือ: ${allKeys || 'ว่างเปล่า'}\n\nรบกวนแคปเจอร์หน้าจอนี้ให้ผมดูหน่อยครับ`);
       return;
     }
 
