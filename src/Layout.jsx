@@ -108,7 +108,7 @@ export default function Layout({ userProfile }) {
   const shopStatus = localProfile?.shopStatus || null; // null, 'pending', 'revision', 'approved'
   
   const canRegisterShop = isProfileComplete && shopStatus !== 'approved';
-  const hasApprovedShop = shopStatus === 'approved';
+
   // ==========================================
 // 🌟 State สำหรับเปิด/ปิดไอคอน My Shop
   const [hasApprovedShop, setHasApprovedShop] = useState(false);
