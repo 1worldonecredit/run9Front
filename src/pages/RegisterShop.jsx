@@ -19,7 +19,6 @@ export default function RegisterShop() {
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isInfoExpanded, setIsInfoExpanded] = useState(false);
   
-  // 🌟 State สำหรับเก็บที่อยู่ที่ดึงมาจาก Google Maps (ไม่แสดงเป็นช่องกรอก)
   const [addressData, setAddressData] = useState({
     full: '', subDistrict: '', district: '', province: '', postalCode: ''
   });
@@ -53,6 +52,7 @@ export default function RegisterShop() {
         const userId = loggedInUser ? loggedInUser.id : null;
         if (!userId) { setIsLoadingData(false); return; }
 
+        // 🌟 ดึงข้อมูลจาก API ตัวใหม่ที่เราเพิ่งสร้าง
         const shopRes = await fetch(`${API_URL}/api/shops/my-shop?user_id=${userId}`);
         
         if (shopRes.ok) {
@@ -61,6 +61,7 @@ export default function RegisterShop() {
             setExistingShopId(shopData.id);
             setShopStatus(shopData.status);
             
+            // 🌟 นำข้อมูลเดิมมาใส่คืนในฟอร์ม
             setFormData({
               shopName: shopData.shop_name || '', categoryId: shopData.category_id || '',
               businessType: shopData.business_type || 'individual',
@@ -74,9 +75,14 @@ export default function RegisterShop() {
               setIsLocationVerified(true);
             }
 
-            // ถ้ามีที่อยู่เก่า ก็ดึงมาโชว์
             if (shopData.address_full) {
-              setAddressData(prev => ({ ...prev, full: shopData.address_full }));
+              setAddressData({
+                full: shopData.address_full,
+                subDistrict: shopData.sub_district || '',
+                district: shopData.district || '',
+                province: shopData.province || '',
+                postalCode: shopData.postal_code || ''
+              });
             }
 
             setImagePreviews({
@@ -116,35 +122,26 @@ export default function RegisterShop() {
     }
   };
 
-  // 🌟 ฟังก์ชันดึงที่อยู่จาก Google Map อัตโนมัติ
   const getAddressFromLatLng = (lat, lng) => {
     if (!window.google || !window.google.maps) return;
     const geocoder = new window.google.maps.Geocoder();
     geocoder.geocode({ location: { lat, lng }, language: 'th' }, (results, status) => {
       if (status === 'OK' && results[0]) {
         let sub = '', dist = '', prov = '', post = '';
-        
         results[0].address_components.forEach(comp => {
           const types = comp.types;
-          // หาส่วนประกอบที่อยู่
           if (types.includes('sublocality_level_2') || types.includes('sublocality')) sub = comp.long_name;
           if (types.includes('locality') || types.includes('sublocality_level_1') || types.includes('administrative_area_level_2')) dist = comp.long_name;
           if (types.includes('administrative_area_level_1')) prov = comp.long_name;
           if (types.includes('postal_code')) post = comp.long_name;
         });
 
-        // ตัดคำว่า ตำบล/อำเภอ/จังหวัด ออกเพื่อให้ฐานข้อมูลสะอาด
         sub = sub.replace(/^ตำบล/, '').replace(/^แขวง/, '').trim();
         dist = dist.replace(/^อำเภอ/, '').replace(/^เขต/, '').trim();
         prov = prov.replace(/^จังหวัด/, '').replace(/^จ\./, '').trim();
 
-        // เก็บลง State
         setAddressData({
-          full: results[0].formatted_address,
-          subDistrict: sub,
-          district: dist,
-          province: prov,
-          postalCode: post
+          full: results[0].formatted_address, subDistrict: sub, district: dist, province: prov, postalCode: post
         });
       } else {
         setAddressData(prev => ({ ...prev, full: `พิกัด: ${lat}, ${lng}` }));
@@ -162,7 +159,7 @@ export default function RegisterShop() {
           setIsLocationVerified(true); 
           setIsInfoOpen(true); 
           setIsInfoExpanded(false);
-          getAddressFromLatLng(lat, lng); // 🌟 เรียกใช้ฟังชันแปลพิกัด
+          getAddressFromLatLng(lat, lng); 
           if (rejectionReasons.location_mismatch) setRejectionReasons(prev => ({ ...prev, location_mismatch: false }));
         },
         () => { alert("คุณไม่อนุญาตให้เข้าถึงตำแหน่ง เราไม่สามารถบันทึกร้านค้าได้ครับ"); setIsLocationVerified(false); }
@@ -178,7 +175,7 @@ export default function RegisterShop() {
     setIsLocationVerified(true);
     setIsInfoOpen(true); 
     setIsInfoExpanded(false);
-    getAddressFromLatLng(lat, lng); // 🌟 เรียกใช้ฟังชันแปลพิกัด
+    getAddressFromLatLng(lat, lng); 
     if (rejectionReasons.location_mismatch) setRejectionReasons(prev => ({ ...prev, location_mismatch: false }));
   };
 
@@ -192,7 +189,6 @@ export default function RegisterShop() {
     const submitData = new FormData();
     Object.keys(formData).forEach(key => submitData.append(key, formData[key]));
     
-    // 🌟 แนบพิกัดและที่อยู่ลงไปกับฟอร์ม
     submitData.append('lat', markerPos.lat);
     submitData.append('lng', markerPos.lng);
     submitData.append('addressFull', addressData.full);
@@ -228,18 +224,27 @@ export default function RegisterShop() {
   const headerStyle = { marginTop: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#1f2937', borderBottom: '2px solid #f3f4f6', paddingBottom: '12px', marginBottom: '20px' };
   
   if (isLoadingData) return <div style={{textAlign: 'center', padding: '50px'}}>กำลังโหลดข้อมูล...</div>;
-  const isLocked = shopStatus === 'PENDING';
+
+  // 🌟 ระบบจัดการเงื่อนไขการล็อคฟอร์ม (แก้ไขตามคำสั่ง)
+  const isPending = shopStatus === 'PENDING';
+  const isRejected = shopStatus === 'REJECTED';
+  
+  // ล็อคข้อมูลทั่วไป (ชื่อร้าน หมวดหมู่ ฯลฯ) เสมอ ถ้าส่งไปแล้ว หรือโดนตีกลับ (เพราะแอดมินให้แก้แค่รูป/พิกัด)
+  const isGeneralLocked = isPending || isRejected; 
+  
+  // ล็อคแผนที่ จะปลดล็อคก็ต่อเมื่อ โดนตีกลับ และ แอดมินติ๊กว่าพิกัดผิด
+  const isMapLocked = isPending || (isRejected && !rejectionReasons.location_mismatch);
 
   return (
     <div className="shop-container" style={{ padding: '20px', maxWidth: '800px', margin: '0 auto', background: '#f8fafc', borderRadius: '20px' }}>
       
-      {shopStatus === 'PENDING' && (
+      {isPending && (
         <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', color: '#b45309', padding: '16px', borderRadius: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 'bold' }}>
           <Lock size={24} /> ข้อมูลอยู่ระหว่างรอการตรวจสอบจากเจ้าหน้าที่ (ไม่สามารถแก้ไขได้)
         </div>
       )}
 
-      {shopStatus === 'REJECTED' && (
+      {isRejected && (
         <div style={{ background: '#fef2f2', border: '1px solid #ef4444', color: '#b91c1c', padding: '16px', borderRadius: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 'bold' }}>
           <AlertCircle size={24} /> กรุณาตรวจสอบจุดที่มีกรอบสีแดง ทำการแก้ไข และกดส่งใหม่อีกครั้ง
         </div>
@@ -248,17 +253,17 @@ export default function RegisterShop() {
       <form onSubmit={handleSubmit}>
         
         {/* ============================================== */}
-        {/* ส่วนที่ 1: ข้อมูลร้านค้า */}
+        {/* ส่วนที่ 1: ข้อมูลร้านค้า (ถูกล็อคเสมอเมื่อตีกลับ เพื่อไม่ให้เสียเวลาพิมพ์ใหม่) */}
         {/* ============================================== */}
         <div style={cardStyle}>
-          {isLocked && <div style={{position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.6)', zIndex: 10, borderRadius: '16px'}} />}
+          {isGeneralLocked && <div style={{position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.4)', zIndex: 10, borderRadius: '16px'}} />}
           <h3 style={headerStyle}><Store size={22} color="#3b82f6" /> ข้อมูลร้านค้า</h3>
           
           <label style={{fontSize: '13px', fontWeight: 'bold', color: '#4b5563', display: 'block', marginBottom: '6px'}}>ชื่อร้านค้า</label>
-          <input type="text" name="shopName" value={formData.shopName} onChange={handleChange} disabled={isLocked} style={{width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db', marginBottom: '16px', outline: 'none', backgroundColor: isLocked ? '#f3f4f6' : '#fff'}} required />
+          <input type="text" name="shopName" value={formData.shopName} onChange={handleChange} disabled={isGeneralLocked} style={{width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db', marginBottom: '16px', outline: 'none', backgroundColor: isGeneralLocked ? '#f3f4f6' : '#fff', color: '#1f2937'}} required />
           
           <label style={{fontSize: '13px', fontWeight: 'bold', color: '#4b5563', display: 'block', marginBottom: '6px'}}>หมวดหมู่สินค้า</label>
-          <select name="categoryId" value={formData.categoryId} onChange={handleChange} disabled={isLocked} style={{width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none', backgroundColor: isLocked ? '#f3f4f6' : '#fff'}} required>
+          <select name="categoryId" value={formData.categoryId} onChange={handleChange} disabled={isGeneralLocked} style={{width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none', backgroundColor: isGeneralLocked ? '#f3f4f6' : '#fff', color: '#1f2937'}} required>
             <option value="">-- เลือกหมวดหมู่ --</option>
             {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.category_name}</option>)}
           </select>
@@ -266,18 +271,18 @@ export default function RegisterShop() {
           <div style={{ marginTop: '20px', padding: '16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
             <label style={{fontSize: '13px', fontWeight: 'bold', color: '#4b5563', display: 'block', marginBottom: '12px'}}>รูปแบบการจดทะเบียน:</label>
             <div style={{ display: 'flex', gap: '25px', color: '#334155', fontSize: '15px' }}>
-              <label><input type="radio" name="businessType" value="individual" checked={formData.businessType === 'individual'} onChange={handleChange} disabled={isLocked} /> บุคคลธรรมดา</label>
-              <label><input type="radio" name="businessType" value="corporate" checked={formData.businessType === 'corporate'} onChange={handleChange} disabled={isLocked} /> นิติบุคคล</label>
+              <label><input type="radio" name="businessType" value="individual" checked={formData.businessType === 'individual'} onChange={handleChange} disabled={isGeneralLocked} /> บุคคลธรรมดา</label>
+              <label><input type="radio" name="businessType" value="corporate" checked={formData.businessType === 'corporate'} onChange={handleChange} disabled={isGeneralLocked} /> นิติบุคคล</label>
             </div>
           </div>
 
           <div style={{marginTop: '20px', background: '#f0f9ff', padding: '16px', borderRadius: '8px', border: '1px solid #bae6fd'}}>
             <label style={{fontWeight: 'bold', marginBottom: '12px', display: 'block', color: '#0369a1'}}>รูปแบบการขาย:</label>
             <div style={{display: 'flex', gap: '15px', flexWrap: 'wrap', fontSize: '14px', color: '#334155'}}>
-              <label><input type="checkbox" name="sellOnline" checked={formData.sellOnline} onChange={handleChange} disabled={isLocked} /> ออนไลน์</label>
-              <label><input type="checkbox" name="sellAtStore" checked={formData.sellAtStore} onChange={handleChange} disabled={isLocked} /> หน้าร้าน</label>
-              <label><input type="checkbox" name="sellAtHome" checked={formData.sellAtHome} onChange={handleChange} disabled={isLocked} /> ที่บ้าน</label>
-              <label><input type="checkbox" name="deliveryService" checked={formData.deliveryService} onChange={handleChange} disabled={isLocked} /> บริการส่ง</label>
+              <label><input type="checkbox" name="sellOnline" checked={formData.sellOnline} onChange={handleChange} disabled={isGeneralLocked} /> ออนไลน์</label>
+              <label><input type="checkbox" name="sellAtStore" checked={formData.sellAtStore} onChange={handleChange} disabled={isGeneralLocked} /> หน้าร้าน</label>
+              <label><input type="checkbox" name="sellAtHome" checked={formData.sellAtHome} onChange={handleChange} disabled={isGeneralLocked} /> ที่บ้าน</label>
+              <label><input type="checkbox" name="deliveryService" checked={formData.deliveryService} onChange={handleChange} disabled={isGeneralLocked} /> บริการส่ง</label>
             </div>
           </div>
 
@@ -285,15 +290,15 @@ export default function RegisterShop() {
             <div style={{ marginTop: '20px', padding: '16px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a' }}>
               <label style={{ fontWeight: 'bold', color: '#b45309', display: 'block', marginBottom: '12px' }}>จำนวนสาขา:</label>
               <div style={{ display: 'flex', gap: '25px', color: '#92400e', fontSize: '15px', paddingLeft: '10px' }}>
-                <label><input type="radio" name="hasBranches" value="false" checked={String(formData.hasBranches) === 'false'} onChange={() => setFormData(prev => ({ ...prev, hasBranches: false }))} disabled={isLocked} /> 1 สาขา</label>
-                <label><input type="radio" name="hasBranches" value="true" checked={String(formData.hasBranches) === 'true'} onChange={() => setFormData(prev => ({ ...prev, hasBranches: true }))} disabled={isLocked} /> มากกว่า 1 สาขา</label>
+                <label><input type="radio" name="hasBranches" value="false" checked={String(formData.hasBranches) === 'false'} onChange={() => setFormData(prev => ({ ...prev, hasBranches: false }))} disabled={isGeneralLocked} /> 1 สาขา</label>
+                <label><input type="radio" name="hasBranches" value="true" checked={String(formData.hasBranches) === 'true'} onChange={() => setFormData(prev => ({ ...prev, hasBranches: true }))} disabled={isGeneralLocked} /> มากกว่า 1 สาขา</label>
               </div>
             </div>
           )}
         </div>
 
         {/* ============================================== */}
-        {/* ส่วนที่ 2: รูปภาพ */}
+        {/* ส่วนที่ 2: รูปภาพ (ปลดล็อคเฉพาะรูปที่มี Error!) */}
         {/* ============================================== */}
         <div style={cardStyle}>
           <h3 style={headerStyle}><Camera size={22} color="#ec4899" /> อัปโหลดภาพถ่าย</h3>
@@ -307,17 +312,20 @@ export default function RegisterShop() {
               { id: 'img_id_card', fieldKey: 'imageIdCard', label: '6. บัตร ปชช.' }
             ].map((imgItem) => {
               const hasError = rejectionReasons[imgItem.id];
+              // 🌟 รูปนี้จะถูกล็อค ถ้าอยู่สถานะรอตรวจ หรือ โดนตีกลับแต่แอดมินไม่ได้ติ๊กรูปนี้
+              const isImageLocked = isPending || (isRejected && !hasError); 
+
               return (
-                <div key={imgItem.id} style={{ position: 'relative', height: '140px', borderRadius: '12px', overflow: 'hidden', border: hasError ? '3px solid #ef4444' : (imagePreviews[imgItem.fieldKey] ? '2px solid #22c55e' : '2px dashed #cbd5e1'), backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: isLocked ? 'not-allowed' : 'pointer' }}>
+                <div key={imgItem.id} style={{ position: 'relative', height: '140px', borderRadius: '12px', overflow: 'hidden', border: hasError ? '3px solid #ef4444' : (imagePreviews[imgItem.fieldKey] ? '2px solid #22c55e' : '2px dashed #cbd5e1'), backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: isImageLocked ? 'not-allowed' : 'pointer' }}>
                   {imagePreviews[imgItem.fieldKey] ? (
                     <>
-                      <img src={imagePreviews[imgItem.fieldKey]} style={{width: '100%', height: '100%', objectFit: 'cover', opacity: isLocked ? 0.7 : 1}} />
+                      <img src={imagePreviews[imgItem.fieldKey]} style={{width: '100%', height: '100%', objectFit: 'cover', opacity: isImageLocked ? 0.7 : 1}} />
                       <div style={{position: 'absolute', bottom: 0, width: '100%', background: hasError ? 'rgba(239, 68, 68, 0.9)' : 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '11px', padding: '6px', textAlign: 'center', fontWeight: hasError ? 'bold' : 'normal'}}>{hasError ? '❌ ต้องแก้ไข' : imgItem.label}</div>
                     </>
                   ) : (
                     <div style={{padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', color: hasError ? '#ef4444' : '#94a3b8'}}><ImagePlus size={32} style={{ marginBottom: '8px' }} /> <span style={{fontSize: '12px'}}>{imgItem.label}</span></div>
                   )}
-                  {!isLocked && <input type="file" accept="image/*" style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} onChange={(e) => handleImageChange(e, imgItem.fieldKey)} required={!imagePreviews[imgItem.fieldKey]} />}
+                  {!isImageLocked && <input type="file" accept="image/*" style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} onChange={(e) => handleImageChange(e, imgItem.fieldKey)} required={!imagePreviews[imgItem.fieldKey]} />}
                 </div>
               );
             })}
@@ -325,19 +333,18 @@ export default function RegisterShop() {
         </div>
 
         {/* ============================================== */}
-        {/* ส่วนที่ 3: แผนที่ (อยู่ด้านล่างสุด และมีปุ่มดึงพิกัด) */}
+        {/* ส่วนที่ 3: แผนที่ (ปลดล็อคเฉพาะถ้าแอดมินติ๊กว่าพิกัดผิด) */}
         {/* ============================================== */}
         <div style={{...cardStyle, border: rejectionReasons.location_mismatch ? '3px solid #ef4444' : cardStyle.border}}>
-          {isLocked && <div style={{position: 'absolute', inset: 0, background: 'transparent', zIndex: 10}} />}
+          {isMapLocked && <div style={{position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.4)', zIndex: 10, borderRadius: '16px'}} />}
           <h3 style={headerStyle}><MapPin size={22} color={rejectionReasons.location_mismatch ? "#ef4444" : "#10b981"} /> พิกัดร้านค้า / สถานที่ผลิตจริง</h3>
           
           {rejectionReasons.location_mismatch ? (
             <p style={{fontSize: '14px', color: '#ef4444', marginBottom: '16px', fontWeight: 'bold'}}>❌ พิกัดแผนที่ไม่ตรงกับภาพถ่าย กรุณาปักหมุดใหม่ให้ถูกต้อง</p>
           ) : (
-            <p style={{fontSize: '13px', color: '#64748b', marginBottom: '16px'}}>📍 โปรดคลิกบนแผนที่หรือกดปุ่มด้านล่างเพื่อปักหมุด</p>
+            <p style={{fontSize: '13px', color: '#64748b', marginBottom: '16px'}}>📍 พิกัดปัจจุบันที่บันทึกไว้ในระบบ</p>
           )}
 
-          {/* 🌟 แสดงข้อความที่อยู่แบบ Text ล้วนๆ ไม่มีกรอบ Input */}
           {addressData.full && (
             <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '16px', fontSize: '14px', color: '#1e293b' }}>
               <span style={{fontWeight: 'bold', color: '#3b82f6'}}>ที่อยู่ของพิกัดนี้:</span> {addressData.full}
@@ -352,7 +359,7 @@ export default function RegisterShop() {
                     <InfoWindow position={markerPos} onCloseClick={() => setIsInfoOpen(false)}>
                       {!isInfoExpanded ? (
                         <div onClick={() => setIsInfoExpanded(true)} style={{ padding: '4px 8px', cursor: 'pointer', textAlign: 'center', minWidth: '110px' }}>
-                          <h4 style={{ margin: 0, fontSize: '14px', color: '#1f2937', fontWeight: 'bold' }}>{formData.shopName || 'ร้านค้าใหม่'}</h4>
+                          <h4 style={{ margin: 0, fontSize: '14px', color: '#1f2937', fontWeight: 'bold' }}>{formData.shopName || 'ร้านค้า'}</h4>
                           <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#3b82f6', fontWeight: 'bold' }}>👆 คลิ้กดูรายละเอียด</p>
                         </div>
                       ) : (
@@ -361,7 +368,7 @@ export default function RegisterShop() {
                           <div style={{ width: '100%', height: '120px', borderRadius: '8px', overflow: 'hidden', marginBottom: '12px', background: '#f3f4f6' }}>
                             <img src={imagePreviews.imageOwner || 'https://via.placeholder.com/200?text=No+Image'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           </div>
-                          <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', color: '#1f2937' }}>{formData.shopName || 'กำลังตั้งชื่อร้าน...'}</h4>
+                          <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', color: '#1f2937' }}>{formData.shopName || 'ร้านค้า'}</h4>
                           <a href={`https://www.google.com/maps/dir/?api=1&destination=${markerPos.lat},${markerPos.lng}`} target="_blank" rel="noopener noreferrer" style={{ display: 'block', padding: '10px', background: '#3b82f6', color: '#fff', textDecoration: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px' }}>🚗 นำทางไปที่ร้าน</a>
                         </div>
                       )}
@@ -372,18 +379,17 @@ export default function RegisterShop() {
             ) : <p style={{textAlign: 'center', padding: '40px', background: '#f1f5f9', borderRadius: '12px', color: '#64748b'}}>กำลังโหลดแผนที่...</p>}
           </div>
           
-          {/* 🌟 ปุ่มดึงพิกัด GPS */}
-          <button type="button" onClick={handleGetLocation} disabled={isLocked} style={{width: '100%', padding: '14px', background: isLocationVerified ? (rejectionReasons.location_mismatch ? '#fef2f2' : '#dcfce7') : '#eff6ff', color: isLocationVerified ? (rejectionReasons.location_mismatch ? '#ef4444' : '#166534') : '#2563eb', borderRadius: '10px', border: isLocationVerified ? (rejectionReasons.location_mismatch ? '2px solid #ef4444' : '2px solid #22c55e') : '2px solid #3b82f6', cursor: isLocked ? 'not-allowed' : 'pointer', fontWeight: 'bold'}}>
-            {isLocationVerified ? (rejectionReasons.location_mismatch ? '❌ กรุณาดึงพิกัดใหม่' : '✅ ดึงพิกัดสำเร็จแล้ว') : '📍 ดึงพิกัดปัจจุบันของฉัน (GPS)'}
+          <button type="button" onClick={handleGetLocation} disabled={isMapLocked} style={{width: '100%', padding: '14px', background: isLocationVerified ? (rejectionReasons.location_mismatch ? '#fef2f2' : '#dcfce7') : '#eff6ff', color: isLocationVerified ? (rejectionReasons.location_mismatch ? '#ef4444' : '#166534') : '#2563eb', borderRadius: '10px', border: isLocationVerified ? (rejectionReasons.location_mismatch ? '2px solid #ef4444' : '2px solid #22c55e') : '2px solid #3b82f6', cursor: isMapLocked ? 'not-allowed' : 'pointer', fontWeight: 'bold'}}>
+            {isLocationVerified ? (rejectionReasons.location_mismatch ? '❌ กรุณาดึงพิกัดใหม่' : '✅ พิกัดบันทึกไว้ในระบบแล้ว') : '📍 ดึงพิกัดปัจจุบันของฉัน (GPS)'}
           </button>
         </div>
 
         {/* ปุ่ม Submit */}
-        {shopStatus === 'PENDING' ? (
+        {isPending ? (
           <button type="button" disabled style={{width: '100%', padding: '16px', background: '#94a3b8', color: '#fff', fontWeight: 'bold', borderRadius: '12px', border: 'none', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', cursor: 'not-allowed'}}>
             <Lock size={24} /> ส่งข้อมูลแล้ว รอการตรวจสอบ
           </button>
-        ) : shopStatus === 'REJECTED' ? (
+        ) : isRejected ? (
           <button type="submit" style={{width: '100%', padding: '16px', background: 'linear-gradient(135deg, #ef4444, #b91c1c)', color: '#fff', fontWeight: 'bold', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'}}>
             <Send size={24} /> ยืนยันส่งข้อมูลที่แก้ไขแล้ว
           </button>
