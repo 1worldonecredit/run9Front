@@ -42,14 +42,22 @@ export default function RegisterShop() {
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
   });
 
-  // 🌟 ฟังก์ชันดึง User ID แบบครอบคลุมทุก Format
+  // 🌟 ฟังก์ชันดึง User ID ขั้นเทพ (ดักจับทุกรูปแบบที่เป็นไปได้)
   const getLoggedInUserId = () => {
     try {
       const userStr = localStorage.getItem('user') || localStorage.getItem('userData');
       if (!userStr) return null;
+
+      // กรณีเก็บเป็นเลขไอดีโดดๆ เช่น "15"
+      if (!isNaN(userStr)) return Number(userStr);
+
       const userObj = JSON.parse(userStr);
-      // รองรับทั้งแบบ user.id, user.userId, user.ID, user.User_ID
-      return userObj.id || userObj.userId || userObj.ID || userObj.User_ID || null;
+
+      // ควานหา ID จากโครงสร้างที่นักพัฒนามักใช้
+      const extractedId = userObj.id || userObj.userId || userObj.user_id || userObj.User_ID || userObj.ID || 
+                          (userObj.user && (userObj.user.id || userObj.user.user_id)) || null;
+      
+      return extractedId ? Number(extractedId) : null;
     } catch (error) {
       console.error("Error parsing user data:", error);
       return null;
@@ -62,12 +70,11 @@ export default function RegisterShop() {
         const catRes = await fetch(`${API_URL}/api/shop-categories`);
         if (catRes.ok) setCategories(await catRes.json());
 
-        // 🌟 ใช้ฟังก์ชันดึง ID ที่สร้างไว้
         const userId = getLoggedInUserId();
         
-        if (!userId) { 
+        // ถ้าหา ID ไม่เจอ หรือ ID เป็น 0 ให้หยุดทำงานทันที ไม่ต้องดึงข้อมูล
+        if (!userId || isNaN(userId) || userId === 0) { 
           setIsLoadingData(false); 
-          console.warn("ไม่พบ User ID ใน LocalStorage กรุณา Login ใหม่");
           return; 
         }
 
@@ -199,10 +206,11 @@ export default function RegisterShop() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // 🌟 ด่านตรวจสำคัญ: ถ้าไม่มี User ID ห้ามให้เซฟเด็ดขาด!
+    // 🌟 ด่านตรวจสำคัญ: ถ้าไม่มี ID หรือ ID เป็น 0 ห้ามเซฟเด็ดขาด!
     const userId = getLoggedInUserId();
-    if (!userId) {
-      alert("⚠️ ไม่พบข้อมูลบัญชีผู้ใช้งานของคุณ กรุณาออกจากระบบแล้วเข้าสู่ระบบ (Login) ใหม่อีกครั้งครับ");
+    if (!userId || isNaN(userId) || userId === 0) {
+      const rawData = localStorage.getItem('user') || "ไม่มีข้อมูลใน LocalStorage";
+      alert(`⚠️ ระบบไม่สามารถดึงรหัสผู้ใช้งานของคุณได้ครับ!\n\nข้อมูลที่พบในระบบคือ:\n${rawData.substring(0, 150)}\n\nกรุณาออกจากระบบ (Logout) และเข้าสู่ระบบใหม่อีกครั้งครับ`);
       return;
     }
 
@@ -222,7 +230,7 @@ export default function RegisterShop() {
     submitData.append('province', addressData.province);
     submitData.append('postalCode', addressData.postalCode);
     
-    // 🌟 ส่ง User ID เข้าไปอย่างถูกต้อง
+    // ส่ง User ID ตัวจริงไปให้ Backend
     submitData.append('userId', userId);
 
     Object.keys(images).forEach(key => {
