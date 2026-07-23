@@ -42,37 +42,88 @@ export default function RegisterShop() {
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
   });
 
-  // 🌟 ฟังก์ชันสแกนหา User ID แบบอัตโนมัติ (ไม่สนว่าจะตั้งชื่อตัวแปรว่าอะไร)
+  // ฟังก์ชันสแกนหา User ID (ค้นหาทั้ง LocalStorage และ SessionStorage)
   const getLoggedInUserId = () => {
     try {
-      // 1. ลองหาจากชื่อตัวแปรที่ใช้บ่อยๆ ก่อน
-      const possibleKeys = ['user', 'userData', 'auth', 'authUser', 'session', 'adminUser', 'profile'];
-      for (let key of possibleKeys) {
-        const data = localStorage.getItem(key);
-        if (data) {
-          try {
-            const parsed = JSON.parse(data);
-            const id = parsed.id || parsed.userId || parsed.user_id || parsed.User_ID || (parsed.user && parsed.user.id);
-            if (id) return Number(id);
-          } catch(e) {}
-        }
-      }
-
-      // 2. ถ้ายังไม่เจอ ให้ค้นหาทุกกล่องใน LocalStorage เลย! (ระบบสแกน)
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        const data = localStorage.getItem(key);
+      const extractId = (data) => {
+        if (!data) return null;
+        if (!isNaN(data)) return Number(data);
         try {
-          const parsed = JSON.parse(data);
-          if (parsed && typeof parsed === 'object') {
-            const id = parsed.id || parsed.userId || parsed.user_id || parsed.User_ID || (parsed.user && parsed.user.id);
-            if (id) return Number(id);
-          }
-        } catch(e) {}
+          const p = JSON.parse(data);
+          const id = p.id || p.userId || p.user_id || p.User_ID || p.ID || (p.user && (p.user.id || p.user.user_id));
+          return id ? Number(id) : null;
+        } catch(e) { return null; }
+      };
+
+      let foundId = null;
+      for (let i = 0; i < localStorage.length; i++) {
+        foundId = extractId(localStorage.getItem(localStorage.key(i)));
+        if (foundId) return foundId;
+      }
+      for (let i = 0; i < sessionStorage.length; i++) {
+        foundId = extractId(sessionStorage.getItem(sessionStorage.key(i)));
+        if (foundId) return foundId;
       }
       return null;
     } catch (error) {
       return null;
+    }
+  };
+
+  // 🌟 ฟังก์ชันดึงข้อมูลร้านค้า (แยกออกมาเพื่อให้ระบบ Polling เรียกซ้ำได้แบบ Real-time)
+  const fetchMyShopData = async (userId, isInitial = false) => {
+    if (!userId) return;
+    try {
+      const shopRes = await fetch(`${API_URL}/api/shops/my-shop?user_id=${userId}`);
+      if (shopRes.ok) {
+        const shopData = await shopRes.json();
+        if (shopData && shopData.id) {
+          setExistingShopId(shopData.id);
+          
+          // 🌟 เช็คอัจฉริยะ: จะเขียนฟอร์มใหม่เฉพาะตอนโหลดครั้งแรก หรือเมื่อแอดมินเปลี่ยนสถานะหลังบ้านเท่านั้น
+          setShopStatus(prevStatus => {
+            if (isInitial || prevStatus !== shopData.status) {
+              setFormData({
+                shopName: shopData.shop_name || '', categoryId: shopData.category_id || '',
+                businessType: shopData.business_type || 'individual',
+                sellOnline: shopData.sell_online || false, sellAtStore: shopData.sell_at_shop || false,
+                sellAtHome: shopData.sell_at_home || false, deliveryService: shopData.need_delivery || false,
+                marketingSupport: shopData.need_marketing || false, hasBranches: shopData.has_branches || false
+              });
+
+              if (shopData.latitude && shopData.longitude) {
+                setMarkerPos({ lat: parseFloat(shopData.latitude), lng: parseFloat(shopData.longitude) });
+                setIsLocationVerified(true);
+              }
+
+              if (shopData.address_full) {
+                setAddressData({
+                  full: shopData.address_full, subDistrict: shopData.sub_district || '', district: shopData.district || '',
+                  province: shopData.province || '', postalCode: shopData.postal_code || ''
+                });
+              }
+
+              setImagePreviews({
+                imageOwner: shopData.img_owner ? `${API_URL}/${shopData.img_owner}` : null,
+                imageLocation: shopData.img_location ? `${API_URL}/${shopData.img_location}` : null,
+                imageProductReady: shopData.img_product_ready ? `${API_URL}/${shopData.img_product_ready}` : null,
+                imagePackaging: shopData.img_packaging ? `${API_URL}/${shopData.img_packaging}` : null,
+                imageReadyToShip: shopData.img_ready_to_ship ? `${API_URL}/${shopData.img_ready_to_ship}` : null,
+                imageIdCard: shopData.img_id_card ? `${API_URL}/${shopData.img_id_card}` : null,
+              });
+
+              if (shopData.status === 'REJECTED' && shopData.rejection_reasons) {
+                setRejectionReasons(JSON.parse(shopData.rejection_reasons));
+              } else {
+                setRejectionReasons({});
+              }
+            }
+            return shopData.status;
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching shop data in background:", error);
     }
   };
 
@@ -82,66 +133,31 @@ export default function RegisterShop() {
         const catRes = await fetch(`${API_URL}/api/shop-categories`);
         if (catRes.ok) setCategories(await catRes.json());
 
-        // 🌟 เรียกใช้ระบบสแกน ID
         const userId = getLoggedInUserId();
-        
-        if (!userId || isNaN(userId) || userId === 0) { 
-          setIsLoadingData(false); 
-          return; 
-        }
-
-        const shopRes = await fetch(`${API_URL}/api/shops/my-shop?user_id=${userId}`);
-        
-        if (shopRes.ok) {
-          const shopData = await shopRes.json();
-          if (shopData && shopData.id) {
-            setExistingShopId(shopData.id);
-            setShopStatus(shopData.status);
-            
-            setFormData({
-              shopName: shopData.shop_name || '', categoryId: shopData.category_id || '',
-              businessType: shopData.business_type || 'individual',
-              sellOnline: shopData.sell_online || false, sellAtStore: shopData.sell_at_shop || false,
-              sellAtHome: shopData.sell_at_home || false, deliveryService: shopData.need_delivery || false,
-              marketingSupport: shopData.need_marketing || false, hasBranches: shopData.has_branches || false
-            });
-
-            if (shopData.latitude && shopData.longitude) {
-              setMarkerPos({ lat: parseFloat(shopData.latitude), lng: parseFloat(shopData.longitude) });
-              setIsLocationVerified(true);
-            }
-
-            if (shopData.address_full) {
-              setAddressData({
-                full: shopData.address_full,
-                subDistrict: shopData.sub_district || '',
-                district: shopData.district || '',
-                province: shopData.province || '',
-                postalCode: shopData.postal_code || ''
-              });
-            }
-
-            setImagePreviews({
-              imageOwner: shopData.img_owner ? `${API_URL}/${shopData.img_owner}` : null,
-              imageLocation: shopData.img_location ? `${API_URL}/${shopData.img_location}` : null,
-              imageProductReady: shopData.img_product_ready ? `${API_URL}/${shopData.img_product_ready}` : null,
-              imagePackaging: shopData.img_packaging ? `${API_URL}/${shopData.img_packaging}` : null,
-              imageReadyToShip: shopData.img_ready_to_ship ? `${API_URL}/${shopData.img_ready_to_ship}` : null,
-              imageIdCard: shopData.img_id_card ? `${API_URL}/${shopData.img_id_card}` : null,
-            });
-
-            if (shopData.status === 'REJECTED' && shopData.rejection_reasons) {
-              setRejectionReasons(JSON.parse(shopData.rejection_reasons));
-            }
-          }
+        if (userId && !isNaN(userId) && userId !== 0) {
+          // โฮลดข้อมูลครั้งแรกแบบบังคับดึงข้อมูลคืนฟอร์ม
+          await fetchMyShopData(userId, true);
         }
       } catch (error) {
-        console.error("Error fetching initial data:", error);
+        console.error("Error fetching initial categories:", error);
       } finally {
         setIsLoadingData(false);
       }
     };
     fetchInitialData();
+
+    // 🌟 พระเอกของงาน: ระบบเช็คสถานะ Real-time ทุกๆ 8 วินาที สำหรับมือถือลูกค้า
+    const userId = getLoggedInUserId();
+    let interval;
+    if (userId && !isNaN(userId) && userId !== 0) {
+      interval = setInterval(() => {
+        fetchMyShopData(userId, false); // ดึงข้อมูลเงียบๆ เช็คแค่ตัวเปลี่ยนสถานะ
+      }, 8000); 
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, []);
 
   const handleChange = (e) => {
@@ -218,15 +234,11 @@ export default function RegisterShop() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // 🌟 ด่านตรวจสำคัญ
     const userId = getLoggedInUserId();
     if (!userId || isNaN(userId) || userId === 0) {
-      // ดึงชื่อ Key ทั้งหมดมาโชว์ จะได้รู้ว่าระบบตั้งชื่อว่าอะไร
       let allKeys = "";
-      for (let i = 0; i < localStorage.length; i++) {
-          allKeys += `[${localStorage.key(i)}] `;
-      }
-      alert(`⚠️ ระบบไม่สามารถดึงรหัสผู้ใช้งานได้ครับ!\n\nข้อมูลที่มีในระบบคือ: ${allKeys || 'ว่างเปล่า'}\n\nรบกวนแคปเจอร์หน้าจอนี้ให้ผมดูหน่อยครับ`);
+      for (let i = 0; i < localStorage.length; i++) allKeys += `[${localStorage.key(i)}] `;
+      alert(`⚠️ ระบบไม่สามารถดึงรหัสผู้ใช้งานได้ครับ!\n\nข้อมูลที่มีในระบบคือ: ${allKeys || 'ว่างเปล่า'}`);
       return;
     }
 
@@ -246,7 +258,6 @@ export default function RegisterShop() {
     submitData.append('province', addressData.province);
     submitData.append('postalCode', addressData.postalCode);
     
-    // ส่ง User ID ตัวจริงไปให้ Backend
     submitData.append('userId', userId);
 
     Object.keys(images).forEach(key => {
@@ -276,8 +287,9 @@ export default function RegisterShop() {
 
   const isPending = shopStatus === 'PENDING';
   const isRejected = shopStatus === 'REJECTED';
-  const isGeneralLocked = isPending || isRejected; 
-  const isMapLocked = isPending || (isRejected && !rejectionReasons.location_mismatch);
+  const isApproved = shopStatus === 'APPROVED';
+  const isGeneralLocked = isPending || isRejected || isApproved; 
+  const isMapLocked = isPending || isApproved || (isRejected && !rejectionReasons.location_mismatch);
 
   return (
     <div className="shop-container" style={{ padding: '20px', maxWidth: '800px', margin: '0 auto', background: '#f8fafc', borderRadius: '20px' }}>
@@ -294,17 +306,57 @@ export default function RegisterShop() {
         </div>
       )}
 
+      {isApproved && (
+        <div style={{ background: '#dcfce7', border: '1px solid #22c55e', color: '#166534', padding: '16px', borderRadius: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 'bold' }}>
+          <CheckCircle2 size={24} /> 🎉 ยินดีด้วย! ร้านค้าของคุณได้รับการอนุมัติเรียบร้อยแล้ว
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
         
         <div style={cardStyle}>
-          {isGeneralLocked && <div style={{position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.4)', zIndex: 10, borderRadius: '16px'}} />}
+          {(isPending || isApproved) && <div style={{position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.4)', zIndex: 10, borderRadius: '16px'}} />}
+          {isRejected && <div style={{position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.1)', zIndex: 10, borderRadius: '16px', pointerEvents: 'none'}} />}
+          
           <h3 style={headerStyle}><Store size={22} color="#3b82f6" /> ข้อมูลร้านค้า</h3>
           
           <label style={{fontSize: '13px', fontWeight: 'bold', color: '#4b5563', display: 'block', marginBottom: '6px'}}>ชื่อร้านค้า</label>
-          <input type="text" name="shopName" value={formData.shopName} onChange={handleChange} disabled={isGeneralLocked} style={{width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db', marginBottom: '16px', outline: 'none', backgroundColor: isGeneralLocked ? '#f3f4f6' : '#fff', color: '#1f2937'}} required />
+          <input 
+            type="text" 
+            name="shopName" 
+            value={formData.shopName} 
+            onChange={handleChange} 
+            disabled={isGeneralLocked} 
+            style={{
+              width: '100%', padding: '10px 12px', borderRadius: '8px', 
+              border: isGeneralLocked ? '1px solid #cbd5e1' : '1px solid #d1d5db', 
+              marginBottom: '16px', outline: 'none', 
+              backgroundColor: isGeneralLocked ? '#e2e8f0' : '#fff', 
+              color: isGeneralLocked ? '#0f172a' : '#1f2937', 
+              fontWeight: isGeneralLocked ? 'bold' : 'normal',
+              opacity: 1, 
+              WebkitTextFillColor: isGeneralLocked ? '#0f172a' : '#1f2937'
+            }} 
+            required 
+          />
           
           <label style={{fontSize: '13px', fontWeight: 'bold', color: '#4b5563', display: 'block', marginBottom: '6px'}}>หมวดหมู่สินค้า</label>
-          <select name="categoryId" value={formData.categoryId} onChange={handleChange} disabled={isGeneralLocked} style={{width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none', backgroundColor: isGeneralLocked ? '#f3f4f6' : '#fff', color: '#1f2937'}} required>
+          <select 
+            name="categoryId" 
+            value={formData.categoryId} 
+            onChange={handleChange} 
+            disabled={isGeneralLocked} 
+            style={{
+              width: '100%', padding: '10px 12px', borderRadius: '8px', 
+              border: isGeneralLocked ? '1px solid #cbd5e1' : '1px solid #d1d5db', 
+              outline: 'none', 
+              backgroundColor: isGeneralLocked ? '#e2e8f0' : '#fff', 
+              color: isGeneralLocked ? '#0f172a' : '#1f2937',
+              fontWeight: isGeneralLocked ? 'bold' : 'normal',
+              opacity: 1, 
+              WebkitTextFillColor: isGeneralLocked ? '#0f172a' : '#1f2937'
+            }} 
+            required>
             <option value="">-- เลือกหมวดหมู่ --</option>
             {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.category_name}</option>)}
           </select>
@@ -350,7 +402,7 @@ export default function RegisterShop() {
               { id: 'img_id_card', fieldKey: 'imageIdCard', label: '6. บัตร ปชช.' }
             ].map((imgItem) => {
               const hasError = rejectionReasons[imgItem.id];
-              const isImageLocked = isPending || (isRejected && !hasError); 
+              const isImageLocked = isPending || isApproved || (isRejected && !hasError); 
 
               return (
                 <div key={imgItem.id} style={{ position: 'relative', height: '140px', borderRadius: '12px', overflow: 'hidden', border: hasError ? '3px solid #ef4444' : (imagePreviews[imgItem.fieldKey] ? '2px solid #22c55e' : '2px dashed #cbd5e1'), backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: isImageLocked ? 'not-allowed' : 'pointer' }}>
@@ -370,7 +422,7 @@ export default function RegisterShop() {
         </div>
 
         <div style={{...cardStyle, border: rejectionReasons.location_mismatch ? '3px solid #ef4444' : cardStyle.border}}>
-          {isMapLocked && <div style={{position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.4)', zIndex: 10, borderRadius: '16px'}} />}
+          {(isPending || isApproved) && <div style={{position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.4)', zIndex: 10, borderRadius: '16px'}} />}
           <h3 style={headerStyle}><MapPin size={22} color={rejectionReasons.location_mismatch ? "#ef4444" : "#10b981"} /> พิกัดร้านค้า / สถานที่ผลิตจริง</h3>
           
           {rejectionReasons.location_mismatch ? (
@@ -393,7 +445,7 @@ export default function RegisterShop() {
                     <InfoWindow position={markerPos} onCloseClick={() => setIsInfoOpen(false)}>
                       {!isInfoExpanded ? (
                         <div onClick={() => setIsInfoExpanded(true)} style={{ padding: '4px 8px', cursor: 'pointer', textAlign: 'center', minWidth: '110px' }}>
-                          <h4 style={{ margin: 0, fontSize: '14px', color: '#1f2937', fontWeight: 'bold' }}>{formData.shopName || 'ร้านค้า'}</h4>
+                          <h4 style={{ margin: 0, fontSize: '14px', color: '#000', fontWeight: 'bold' }}>{formData.shopName || 'ร้านค้า'}</h4>
                           <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#3b82f6', fontWeight: 'bold' }}>👆 คลิ้กดูรายละเอียด</p>
                         </div>
                       ) : (
@@ -402,7 +454,7 @@ export default function RegisterShop() {
                           <div style={{ width: '100%', height: '120px', borderRadius: '8px', overflow: 'hidden', marginBottom: '12px', background: '#f3f4f6' }}>
                             <img src={imagePreviews.imageOwner || 'https://via.placeholder.com/200?text=No+Image'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           </div>
-                          <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', color: '#1f2937' }}>{formData.shopName || 'ร้านค้า'}</h4>
+                          <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', color: '#000', fontWeight: 'bold' }}>{formData.shopName || 'ร้านค้า'}</h4>
                           <a href={`https://www.google.com/maps/dir/?api=1&destination=${markerPos.lat},${markerPos.lng}`} target="_blank" rel="noopener noreferrer" style={{ display: 'block', padding: '10px', background: '#3b82f6', color: '#fff', textDecoration: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px' }}>🚗 นำทางไปที่ร้าน</a>
                         </div>
                       )}
@@ -421,6 +473,10 @@ export default function RegisterShop() {
         {isPending ? (
           <button type="button" disabled style={{width: '100%', padding: '16px', background: '#94a3b8', color: '#fff', fontWeight: 'bold', borderRadius: '12px', border: 'none', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', cursor: 'not-allowed'}}>
             <Lock size={24} /> ส่งข้อมูลแล้ว รอการตรวจสอบ
+          </button>
+        ) : isApproved ? (
+          <button type="button" disabled style={{width: '100%', padding: '16px', background: '#10b981', color: '#fff', fontWeight: 'bold', borderRadius: '12px', border: 'none', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', cursor: 'not-allowed'}}>
+            <CheckCircle2 size={24} /> ร้านค้าได้รับการอนุมัติแล้ว
           </button>
         ) : isRejected ? (
           <button type="submit" style={{width: '100%', padding: '16px', background: 'linear-gradient(135deg, #ef4444, #b91c1c)', color: '#fff', fontWeight: 'bold', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'}}>
