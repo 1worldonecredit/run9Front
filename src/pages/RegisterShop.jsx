@@ -71,7 +71,21 @@ export default function RegisterShop() {
         }
 
         // 2. ดึงข้อมูลร้านค้าของตัวเอง (สมมติว่าใช้ user_id = 1 หรือดึงจาก Token จริงของคุณ)
-        const userId = 1; 
+        // 2. ดึงข้อมูลร้านค้าของตัวเองตามคนที่ล็อกอิน
+        
+        // 📍 ดึงข้อมูลจากกล่องความจำที่ชื่อว่า 'user' (หรือชื่อที่คุณตั้งไว้ตอนทำหน้า Login)
+        const loggedInUser = JSON.parse(localStorage.getItem('user')); 
+        
+        // 📍 ถ้ามีคนล็อกอินอยู่ ให้เอา id มาใช้ แต่ถ้าไม่มีให้เป็น null
+        const userId = loggedInUser ? loggedInUser.id : null;
+
+        // 📍 ป้องกัน error: ถ้ายังไม่ได้ล็อกอิน ไม่ต้องทำคำสั่งดึงข้อมูลร้านค้าต่อ
+        if (!userId) {
+          console.log("ยังไม่ได้ล็อกอิน");
+          setIsLoadingData(false);
+          return; 
+        }
+
         const shopRes = await fetch(`${API_URL}/api/shops/my-shop?user_id=${userId}`);
         
         if (shopRes.ok) {
