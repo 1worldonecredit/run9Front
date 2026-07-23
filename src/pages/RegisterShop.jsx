@@ -70,8 +70,6 @@ export default function RegisterShop() {
           setCategories(catData);
         }
 
-        // 2. ดึงข้อมูลร้านค้าของตัวเอง (สมมติว่าใช้ user_id = 1 หรือดึงจาก Token จริงของคุณ)
-        // 2. ดึงข้อมูลร้านค้าของตัวเองตามคนที่ล็อกอิน
         
         // 📍 ดึงข้อมูลจากกล่องความจำที่ชื่อว่า 'user' (หรือชื่อที่คุณตั้งไว้ตอนทำหน้า Login)
         const loggedInUser = JSON.parse(localStorage.getItem('user')); 
@@ -302,7 +300,16 @@ export default function RegisterShop() {
             disabled={isLocked}
             className="shop-input" 
             placeholder="ตั้งชื่อร้านของคุณ..." 
-            style={{width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', marginBottom: '16px', outline: 'none', backgroundColor: isLocked ? '#f3f4f6' : '#fff'}}
+            style={{
+              width: '100%', 
+              padding: '12px', 
+              borderRadius: '8px', 
+              border: '1px solid #d1d5db', 
+              marginBottom: '16px', 
+              outline: 'none', 
+              backgroundColor: isLocked ? '#f3f4f6' : '#fff',
+              color: '#1f2937' /* 🌟 เพิ่มบรรทัดนี้: บังคับตัวหนังสือสีเข้ม */
+            }}
             required 
           />
           
