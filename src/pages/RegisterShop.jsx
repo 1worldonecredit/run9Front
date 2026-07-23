@@ -42,17 +42,35 @@ export default function RegisterShop() {
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
   });
 
+  // 🌟 ฟังก์ชันดึง User ID แบบครอบคลุมทุก Format
+  const getLoggedInUserId = () => {
+    try {
+      const userStr = localStorage.getItem('user') || localStorage.getItem('userData');
+      if (!userStr) return null;
+      const userObj = JSON.parse(userStr);
+      // รองรับทั้งแบบ user.id, user.userId, user.ID, user.User_ID
+      return userObj.id || userObj.userId || userObj.ID || userObj.User_ID || null;
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
         const catRes = await fetch(`${API_URL}/api/shop-categories`);
         if (catRes.ok) setCategories(await catRes.json());
 
-        const loggedInUser = JSON.parse(localStorage.getItem('user')); 
-        const userId = loggedInUser ? loggedInUser.id : null;
-        if (!userId) { setIsLoadingData(false); return; }
+        // 🌟 ใช้ฟังก์ชันดึง ID ที่สร้างไว้
+        const userId = getLoggedInUserId();
+        
+        if (!userId) { 
+          setIsLoadingData(false); 
+          console.warn("ไม่พบ User ID ใน LocalStorage กรุณา Login ใหม่");
+          return; 
+        }
 
-        // 🌟 ดึงข้อมูลจาก API ตัวใหม่ที่เราเพิ่งสร้าง
         const shopRes = await fetch(`${API_URL}/api/shops/my-shop?user_id=${userId}`);
         
         if (shopRes.ok) {
@@ -61,7 +79,6 @@ export default function RegisterShop() {
             setExistingShopId(shopData.id);
             setShopStatus(shopData.status);
             
-            // 🌟 นำข้อมูลเดิมมาใส่คืนในฟอร์ม
             setFormData({
               shopName: shopData.shop_name || '', categoryId: shopData.category_id || '',
               businessType: shopData.business_type || 'individual',
@@ -181,6 +198,14 @@ export default function RegisterShop() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // 🌟 ด่านตรวจสำคัญ: ถ้าไม่มี User ID ห้ามให้เซฟเด็ดขาด!
+    const userId = getLoggedInUserId();
+    if (!userId) {
+      alert("⚠️ ไม่พบข้อมูลบัญชีผู้ใช้งานของคุณ กรุณาออกจากระบบแล้วเข้าสู่ระบบ (Login) ใหม่อีกครั้งครับ");
+      return;
+    }
+
     if (!isLocationVerified) {
         alert("กรุณากดดึงพิกัดปัจจุบัน หรือปักหมุดบนแผนที่ ก่อนทำการบันทึกข้อมูลครับ");
         return; 
@@ -197,8 +222,8 @@ export default function RegisterShop() {
     submitData.append('province', addressData.province);
     submitData.append('postalCode', addressData.postalCode);
     
-    const loggedInUser = JSON.parse(localStorage.getItem('user')); 
-    submitData.append('userId', loggedInUser ? loggedInUser.id : '');
+    // 🌟 ส่ง User ID เข้าไปอย่างถูกต้อง
+    submitData.append('userId', userId);
 
     Object.keys(images).forEach(key => {
       if (images[key]) submitData.append(key, images[key]);
@@ -225,14 +250,9 @@ export default function RegisterShop() {
   
   if (isLoadingData) return <div style={{textAlign: 'center', padding: '50px'}}>กำลังโหลดข้อมูล...</div>;
 
-  // 🌟 ระบบจัดการเงื่อนไขการล็อคฟอร์ม (แก้ไขตามคำสั่ง)
   const isPending = shopStatus === 'PENDING';
   const isRejected = shopStatus === 'REJECTED';
-  
-  // ล็อคข้อมูลทั่วไป (ชื่อร้าน หมวดหมู่ ฯลฯ) เสมอ ถ้าส่งไปแล้ว หรือโดนตีกลับ (เพราะแอดมินให้แก้แค่รูป/พิกัด)
   const isGeneralLocked = isPending || isRejected; 
-  
-  // ล็อคแผนที่ จะปลดล็อคก็ต่อเมื่อ โดนตีกลับ และ แอดมินติ๊กว่าพิกัดผิด
   const isMapLocked = isPending || (isRejected && !rejectionReasons.location_mismatch);
 
   return (
@@ -252,9 +272,6 @@ export default function RegisterShop() {
 
       <form onSubmit={handleSubmit}>
         
-        {/* ============================================== */}
-        {/* ส่วนที่ 1: ข้อมูลร้านค้า (ถูกล็อคเสมอเมื่อตีกลับ เพื่อไม่ให้เสียเวลาพิมพ์ใหม่) */}
-        {/* ============================================== */}
         <div style={cardStyle}>
           {isGeneralLocked && <div style={{position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.4)', zIndex: 10, borderRadius: '16px'}} />}
           <h3 style={headerStyle}><Store size={22} color="#3b82f6" /> ข้อมูลร้านค้า</h3>
@@ -297,9 +314,6 @@ export default function RegisterShop() {
           )}
         </div>
 
-        {/* ============================================== */}
-        {/* ส่วนที่ 2: รูปภาพ (ปลดล็อคเฉพาะรูปที่มี Error!) */}
-        {/* ============================================== */}
         <div style={cardStyle}>
           <h3 style={headerStyle}><Camera size={22} color="#ec4899" /> อัปโหลดภาพถ่าย</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px' }}>
@@ -312,7 +326,6 @@ export default function RegisterShop() {
               { id: 'img_id_card', fieldKey: 'imageIdCard', label: '6. บัตร ปชช.' }
             ].map((imgItem) => {
               const hasError = rejectionReasons[imgItem.id];
-              // 🌟 รูปนี้จะถูกล็อค ถ้าอยู่สถานะรอตรวจ หรือ โดนตีกลับแต่แอดมินไม่ได้ติ๊กรูปนี้
               const isImageLocked = isPending || (isRejected && !hasError); 
 
               return (
@@ -332,9 +345,6 @@ export default function RegisterShop() {
           </div>
         </div>
 
-        {/* ============================================== */}
-        {/* ส่วนที่ 3: แผนที่ (ปลดล็อคเฉพาะถ้าแอดมินติ๊กว่าพิกัดผิด) */}
-        {/* ============================================== */}
         <div style={{...cardStyle, border: rejectionReasons.location_mismatch ? '3px solid #ef4444' : cardStyle.border}}>
           {isMapLocked && <div style={{position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.4)', zIndex: 10, borderRadius: '16px'}} />}
           <h3 style={headerStyle}><MapPin size={22} color={rejectionReasons.location_mismatch ? "#ef4444" : "#10b981"} /> พิกัดร้านค้า / สถานที่ผลิตจริง</h3>
@@ -384,7 +394,6 @@ export default function RegisterShop() {
           </button>
         </div>
 
-        {/* ปุ่ม Submit */}
         {isPending ? (
           <button type="button" disabled style={{width: '100%', padding: '16px', background: '#94a3b8', color: '#fff', fontWeight: 'bold', borderRadius: '12px', border: 'none', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', cursor: 'not-allowed'}}>
             <Lock size={24} /> ส่งข้อมูลแล้ว รอการตรวจสอบ
