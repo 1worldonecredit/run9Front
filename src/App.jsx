@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 // 🌟 เพิ่ม Outlet เข้ามาเพื่อใช้สำหรับทำ Protected Route
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import SoiDaoGame from './pages/SoiDaoGame';
-import ShopLayout from './ShopLayout'; // ดึงไฟล์ ShopLayout ที่เราคุยกันไว้มาใช้
 import ShopLayout from "./pages/ShopLayout";
 // -------------------------------------------------------------
 // 1. นำเข้าไฟล์หน้าต่างๆ 
