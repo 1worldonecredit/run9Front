@@ -110,6 +110,57 @@ export default function Layout({ userProfile }) {
   const canRegisterShop = isProfileComplete && shopStatus !== 'approved';
   const hasApprovedShop = shopStatus === 'approved';
   // ==========================================
+// 🌟 State สำหรับเปิด/ปิดไอคอน My Shop
+  const [hasApprovedShop, setHasApprovedShop] = useState(false);
+  const API_URL = import.meta.env.VITE_API_URL || 'https://api.run9.app';
+
+  useEffect(() => {
+    const checkShopStatus = async () => {
+      try {
+        // 1. ฟังก์ชันดึง User ID แบบครอบจักรวาล (ตัวเดียวกับที่เราใช้)
+        const getLoggedInUserId = () => {
+          const extractId = (data) => {
+            if (!data) return null;
+            if (!isNaN(data)) return Number(data);
+            try {
+              const p = JSON.parse(data);
+              return p.id || p.userId || p.user_id || p.User_ID || p.ID || (p.user && (p.user.id || p.user.user_id));
+            } catch(e) { return null; }
+          };
+          let id = null;
+          for (let i = 0; i < localStorage.length; i++) {
+            id = extractId(localStorage.getItem(localStorage.key(i)));
+            if (id) return id;
+          }
+          for (let i = 0; i < sessionStorage.length; i++) {
+            id = extractId(sessionStorage.getItem(sessionStorage.key(i)));
+            if (id) return id;
+          }
+          return null;
+        };
+
+        const userId = getLoggedInUserId();
+        if (!userId) return;
+
+        // 2. ยิงไปถามหลังบ้านว่าร้านของ User นี้อนุมัติหรือยัง
+        const res = await fetch(`${API_URL}/api/shops/my-shop?user_id=${userId}`);
+        if (res.ok) {
+          const shopData = await res.json();
+          // 3. ถ้าเจอร้าน และสถานะเป็น APPROVED ให้แสดงปุ่ม My Shop
+          if (shopData && shopData.status === 'APPROVED') {
+            setHasApprovedShop(true);
+          } else {
+            setHasApprovedShop(false);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking shop status for Navbar:", error);
+      }
+    };
+
+    checkShopStatus();
+  }, []);
+
 
   return (
     <div className="frontend-layout-container">

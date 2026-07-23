@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 // 🌟 เพิ่ม Outlet เข้ามาเพื่อใช้สำหรับทำ Protected Route
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import SoiDaoGame from './pages/SoiDaoGame';
-
+import ShopLayout from './ShopLayout'; // ดึงไฟล์ ShopLayout ที่เราคุยกันไว้มาใช้
 // -------------------------------------------------------------
 // 1. นำเข้าไฟล์หน้าต่างๆ 
 // -------------------------------------------------------------
@@ -120,7 +120,24 @@ function App() {
           {/* ========================================== */}
           <Route element={<ProtectedRoute />}>
             
-            {/* กลุ่มหน้าหลัก (มี Layout คลุมเพื่อให้มี Navbar บน-ล่าง) */}
+            {/* ================================================== */}
+            {/* 🏪 โซนร้านค้า (ShopLayout): มีเมนูและกรอบเป็นของตัวเอง */}
+            {/* ================================================== */}
+            <Route path="/my-shop" element={<ShopLayout />}>
+              {/* หน้าแรกของร้านค้า (เช่น /my-shop) */}
+              <Route index element={<div style={{padding:'20px'}}><h2>หน้าแดชบอร์ดร้านค้า</h2><p>กำลังพัฒนา...</p></div>} />
+              
+              {/* เมนูย่อยอื่นๆ ของร้านค้า */}
+              <Route path="orders" element={<div style={{padding:'20px'}}><h2>หน้ารายการสั่งซื้อ</h2><p>กำลังพัฒนา...</p></div>} />
+              <Route path="products" element={<div style={{padding:'20px'}}><h2>หน้าจัดการสินค้า</h2><p>กำลังพัฒนา...</p></div>} />
+              <Route path="promotions" element={<div style={{padding:'20px'}}><h2>หน้าโปรโมชั่น</h2><p>กำลังพัฒนา...</p></div>} />
+              <Route path="staff" element={<div style={{padding:'20px'}}><h2>หน้าจัดการพนักงาน</h2><p>กำลังพัฒนา...</p></div>} />
+              <Route path="settings" element={<div style={{padding:'20px'}}><h2>หน้าตั้งค่าร้านค้า</h2><p>กำลังพัฒนา...</p></div>} />
+            </Route>
+
+            {/* ================================================== */}
+            {/* 👤 โซนผู้ใช้ทั่วไป (Layout หลัก): มี Bottom Navbar และ Topbar */}
+            {/* ================================================== */}
             <Route element={<Layout userProfile={userProfile} />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/game" element={<SoiDaoGame />} />
